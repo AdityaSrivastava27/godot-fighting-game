@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+; The skyline beyond the arena. Slightly lighter than the chasm so the depth
+; fog has something to wash toward - a pure black silhouette just disappears
+; into the background instead of reading as distance.
+
+[resource]
+resource_name = "CitySilhouette"
+albedo_color = Color(0.135, 0.14, 0.175, 1)
+metallic = 0.0
+roughness = 1.0

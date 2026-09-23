@@ -1,0 +1,29 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+; Large soft alpha blob used for the low ground haze rolling out of the pit.
+; Alpha-blended rather than additive so it darkens as well as lifts.
+
+[sub_resource type="Gradient" id="Grad_mist"]
+offsets = PackedFloat32Array(0, 0.5, 1)
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0.4, 1, 1, 1, 0)
+
+[sub_resource type="GradientTexture2D" id="Tex_mist"]
+gradient = SubResource("Grad_mist")
+width = 128
+height = 128
+fill = 1
+fill_from = Vector2(0.5, 0.5)
+fill_to = Vector2(1, 0.5)
+
+[resource]
+resource_name = "MistSoft"
+transparency = 1
+blend_mode = 0
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_color = Color(0.55, 0.62, 0.78, 1)
+albedo_texture = SubResource("Tex_mist")
+billboard_mode = 3
+billboard_keep_scale = true
+disable_receive_shadows = true
+no_depth_test = false

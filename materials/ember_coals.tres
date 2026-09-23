@@ -1,0 +1,9 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+[resource]
+resource_name = "EmberCoals"
+albedo_color = Color(0.2, 0.07, 0.03, 1)
+roughness = 0.95
+emission_enabled = true
+emission = Color(1, 0.34, 0.07, 1)
+emission_energy_multiplier = 1.5

@@ -1,0 +1,28 @@
+[gd_scene format=3]
+
+; 1.2-unit banded crate. Origin sits on the ground plane.
+
+[ext_resource type="Material" path="res://materials/wood.tres" id="1_wood"]
+[ext_resource type="Material" path="res://materials/metal_dark.tres" id="2_metal"]
+
+[sub_resource type="BoxMesh" id="Mesh_body"]
+material = ExtResource("1_wood")
+size = Vector3(1.2, 1.2, 1.2)
+
+[sub_resource type="BoxMesh" id="Mesh_band"]
+material = ExtResource("2_metal")
+size = Vector3(1.26, 0.13, 1.26)
+
+[node name="Crate" type="Node3D"]
+
+[node name="Body" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+mesh = SubResource("Mesh_body")
+
+[node name="BandLower" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.26, 0)
+mesh = SubResource("Mesh_band")
+
+[node name="BandUpper" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.96, 0)
+mesh = SubResource("Mesh_band")

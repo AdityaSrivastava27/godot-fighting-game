@@ -1,0 +1,982 @@
+[gd_scene format=3]
+
+; =============================================================================
+;  DUSK COLOSSEUM - 3D fighting game arena
+; =============================================================================
+;  Axis convention
+;    +X / -X .. the fight axis. Playable range is X = -13 .. +13.
+;    Z = 0 ..... the fight plane. Fighters stand here; the camera looks up +Z.
+;    Y = 0 ..... the walking surface of the platform.
+;
+;  Readability contract (this is what keeps two fighters legible):
+;    - Platform is mid-value and desaturated; everything behind it is dark.
+;    - Two overhead spots pool light on the playfield only.
+;    - A cool directional rim light from behind separates silhouettes.
+;    - Depth fog starts at 26 units, so the background reads as flat value.
+;
+;  Nothing here moves gameplay state. The only scripts are fire flicker and
+;  banner sway, both cosmetic.
+; =============================================================================
+
+[ext_resource type="Environment" path="res://environment/arena_env.tres" id="1_env"]
+[ext_resource type="CameraAttributesPractical" path="res://environment/arena_camera_attributes.tres" id="2_camattr"]
+[ext_resource type="Material" path="res://materials/floor_stone.tres" id="3_floor"]
+[ext_resource type="Material" path="res://materials/platform_slab.tres" id="4_slab"]
+[ext_resource type="Material" path="res://materials/stone_light.tres" id="5_stonelight"]
+[ext_resource type="Material" path="res://materials/stone_dark.tres" id="6_stonedark"]
+[ext_resource type="Material" path="res://materials/metal_dark.tres" id="7_metal"]
+[ext_resource type="Material" path="res://materials/bronze_trim.tres" id="8_bronze"]
+[ext_resource type="Material" path="res://materials/glow_boundary.tres" id="9_glow"]
+[ext_resource type="Material" path="res://materials/glow_warm.tres" id="10_warm"]
+[ext_resource type="Material" path="res://materials/ember_coals.tres" id="11_ember"]
+[ext_resource type="Material" path="res://materials/pit_dark.tres" id="12_pit"]
+[ext_resource type="Material" path="res://materials/banner_red.tres" id="13_red"]
+[ext_resource type="Material" path="res://materials/banner_blue.tres" id="14_blue"]
+[ext_resource type="Material" path="res://materials/soft_dot_additive.tres" id="15_dot"]
+[ext_resource type="Material" path="res://materials/mist_soft.tres" id="16_mist"]
+[ext_resource type="Material" path="res://materials/city_silhouette.tres" id="24_city"]
+[ext_resource type="Material" path="res://materials/floor_medallion.tres" id="25_medallion"]
+[ext_resource type="PackedScene" path="res://scenes/props/brazier.tscn" id="17_brazier"]
+[ext_resource type="PackedScene" path="res://scenes/props/pillar.tscn" id="18_pillar"]
+[ext_resource type="PackedScene" path="res://scenes/props/banner.tscn" id="19_banner"]
+[ext_resource type="PackedScene" path="res://scenes/props/lantern.tscn" id="20_lantern"]
+[ext_resource type="PackedScene" path="res://scenes/props/crate.tscn" id="21_crate"]
+[ext_resource type="PackedScene" path="res://scenes/props/barrel.tscn" id="22_barrel"]
+[ext_resource type="PackedScene" path="res://scenes/props/rubble.tscn" id="23_rubble"]
+
+; Two shared primitives do nearly all the work. Every block below is the same
+; unit cube or unit cylinder scaled by its node transform, and the stone
+; materials use world-space triplanar UVs so the texture scale stays constant
+; no matter how a block is stretched.
+
+[sub_resource type="BoxMesh" id="Mesh_box"]
+size = Vector3(1, 1, 1)
+
+[sub_resource type="CylinderMesh" id="Mesh_cyl"]
+top_radius = 0.5
+bottom_radius = 0.5
+height = 1.0
+radial_segments = 16
+rings = 1
+
+[sub_resource type="TorusMesh" id="Mesh_ring"]
+inner_radius = 3.3
+outer_radius = 3.62
+rings = 48
+ring_segments = 6
+
+[sub_resource type="QuadMesh" id="Mesh_mote"]
+size = Vector2(0.07, 0.07)
+
+[sub_resource type="QuadMesh" id="Mesh_mistpuff"]
+size = Vector2(11, 11)
+
+[sub_resource type="Gradient" id="Grad_mote"]
+offsets = PackedFloat32Array(0, 0.25, 0.75, 1)
+colors = PackedColorArray(0.7, 0.82, 1, 0, 0.75, 0.85, 1, 0.3, 0.75, 0.85, 1, 0.22, 0.7, 0.82, 1, 0)
+
+[sub_resource type="Gradient" id="Grad_mist"]
+offsets = PackedFloat32Array(0, 0.3, 0.7, 1)
+colors = PackedColorArray(0.4, 0.48, 0.68, 0, 0.44, 0.52, 0.72, 0.2, 0.44, 0.52, 0.72, 0.16, 0.4, 0.48, 0.68, 0)
+
+[sub_resource type="BoxShape3D" id="Shape_floor"]
+size = Vector3(30, 1.58, 18)
+
+[sub_resource type="BoxShape3D" id="Shape_wall_x"]
+size = Vector3(0.6, 9, 15)
+
+[sub_resource type="BoxShape3D" id="Shape_wall_z"]
+size = Vector3(26.7, 9, 0.6)
+
+[sub_resource type="BoxShape3D" id="Shape_terrace"]
+size = Vector3(86, 1.4, 11)
+
+[node name="Arena" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = ExtResource("1_env")
+camera_attributes = ExtResource("2_camattr")
+
+; -----------------------------------------------------------------------------
+;  LIGHTING
+;  Three directionals form the classic key / fill / rim triangle, and two
+;  overhead spots pool extra light on the playfield so fighters are always the
+;  brightest thing on screen.
+; -----------------------------------------------------------------------------
+
+[node name="Lighting" type="Node3D" parent="."]
+
+[node name="KeyLight" type="DirectionalLight3D" parent="Lighting"]
+transform = Transform3D(-0.8192, 0, 0.5736, 0.4563, 0.606, 0.6517, -0.3476, 0.7955, -0.4964, 0, 26, -14)
+light_color = Color(1, 0.89, 0.78, 1)
+light_energy = 1.15
+light_specular = 0.5
+light_angular_distance = 1.2
+shadow_enabled = true
+shadow_bias = 0.04
+shadow_normal_bias = 1.4
+directional_shadow_mode = 2
+directional_shadow_split_1 = 0.06
+directional_shadow_split_2 = 0.16
+directional_shadow_split_3 = 0.42
+directional_shadow_blend_splits = true
+directional_shadow_fade_start = 0.9
+directional_shadow_max_distance = 70.0
+
+[node name="FillLight" type="DirectionalLight3D" parent="Lighting"]
+transform = Transform3D(0.8141, 0, -0.5807, -0.2947, 0.8616, -0.4132, 0.5004, 0.5075, 0.7014, 0, 22, 18)
+light_color = Color(0.45, 0.58, 0.95, 1)
+light_energy = 0.4
+light_specular = 0.2
+shadow_enabled = false
+
+[node name="RimLight" type="DirectionalLight3D" parent="Lighting"]
+transform = Transform3D(1, 0, 0, 0, 0.9367, -0.3502, 0, 0.3502, 0.9367, 0, 14, 22)
+light_color = Color(0.58, 0.83, 1, 1)
+light_energy = 0.55
+light_specular = 0.7
+shadow_enabled = false
+
+[node name="StageSpotLeft" type="SpotLight3D" parent="Lighting"]
+transform = Transform3D(1, 0, 0, 0, 0.10453, -0.99452, 0, 0.99452, 0.10453, -6.5, 13.5, -1)
+light_color = Color(1, 0.96, 0.9, 1)
+light_energy = 1.7
+light_specular = 0.6
+shadow_enabled = true
+shadow_bias = 0.05
+shadow_normal_bias = 1.2
+spot_range = 27.0
+spot_attenuation = 1.1
+spot_angle = 47.0
+spot_angle_attenuation = 0.85
+
+[node name="StageSpotRight" type="SpotLight3D" parent="Lighting"]
+transform = Transform3D(1, 0, 0, 0, 0.10453, -0.99452, 0, 0.99452, 0.10453, 6.5, 13.5, -1)
+light_color = Color(1, 0.96, 0.9, 1)
+light_energy = 1.7
+light_specular = 0.6
+shadow_enabled = true
+shadow_bias = 0.05
+shadow_normal_bias = 1.2
+spot_range = 27.0
+spot_attenuation = 1.1
+spot_angle = 47.0
+spot_angle_attenuation = 0.85
+
+[node name="ChasmGlow" type="OmniLight3D" parent="Lighting"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -6.5, 16)
+light_color = Color(1, 0.42, 0.14, 1)
+light_energy = 2.8
+light_specular = 0.2
+shadow_enabled = false
+omni_range = 36.0
+omni_attenuation = 1.4
+
+; -----------------------------------------------------------------------------
+;  CAMERAS
+;  MainCamera frames the entire playable area - the widest a tracking camera
+;  would ever need to pull back. CloseCamera is round-start distance, and
+;  WideCamera takes in the whole set for screenshots. Only MainCamera is current.
+; -----------------------------------------------------------------------------
+
+[node name="MainCamera" type="Camera3D" parent="."]
+transform = Transform3D(-1, 0, 0, 0, 0.98163, 0.19081, 0, 0.19081, -0.98163, 0, 6, -19)
+attributes = ExtResource("2_camattr")
+current = true
+fov = 45.0
+near = 0.1
+far = 300.0
+
+[node name="WideCamera" type="Camera3D" parent="."]
+transform = Transform3D(-1, 0, 0, 0, 0.98571, 0.16853, 0, 0.16853, -0.98571, 0, 9, -34)
+attributes = ExtResource("2_camattr")
+current = false
+fov = 45.0
+near = 0.1
+far = 400.0
+
+[node name="CloseCamera" type="Camera3D" parent="."]
+transform = Transform3D(-1, 0, 0, 0, 0.98777, 0.15592, 0, 0.15592, -0.98777, 0, 2.6, -9.5)
+attributes = ExtResource("2_camattr")
+current = false
+fov = 45.0
+near = 0.1
+far = 300.0
+
+; -----------------------------------------------------------------------------
+;  PLATFORM
+;  Slab 30 x 18 with a 27 x 15 fight surface inlaid flush at Y = 0.
+;  The bronze rim sits on the 1.5-unit margin outside the playable area, and
+;  the front rim is deliberately half the height of the other three so it can
+;  never crop a fighters feet from the match camera.
+; -----------------------------------------------------------------------------
+
+[node name="Platform" type="Node3D" parent="."]
+
+[node name="Slab" type="MeshInstance3D" parent="Platform"]
+transform = Transform3D(30, 0, 0, 0, 1.5, 0, 0, 0, 18, 0, -0.83, 0)
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("4_slab")
+
+[node name="FightSurface" type="MeshInstance3D" parent="Platform"]
+transform = Transform3D(27, 0, 0, 0, 0.08, 0, 0, 0, 15, 0, -0.04, 0)
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("3_floor")
+
+[node name="CenterMedallion" type="MeshInstance3D" parent="Platform"]
+transform = Transform3D(6.8, 0, 0, 0, 0.05, 0, 0, 0, 6.8, 0, 0.005, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_cyl")
+material_override = ExtResource("25_medallion")
+
+[node name="CenterRing" type="MeshInstance3D" parent="Platform"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.03, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_ring")
+material_override = ExtResource("8_bronze")
+
+[node name="Rim" type="Node3D" parent="Platform"]
+
+[node name="RimBack" type="MeshInstance3D" parent="Platform/Rim"]
+transform = Transform3D(30, 0, 0, 0, 0.34, 0, 0, 0, 1.2, 0, 0.17, 8.4)
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("8_bronze")
+
+[node name="RimFront" type="MeshInstance3D" parent="Platform/Rim"]
+transform = Transform3D(30, 0, 0, 0, 0.18, 0, 0, 0, 1.2, 0, 0.09, -8.4)
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("8_bronze")
+
+[node name="RimLeft" type="MeshInstance3D" parent="Platform/Rim"]
+transform = Transform3D(1.2, 0, 0, 0, 0.34, 0, 0, 0, 16.8, -14.4, 0.17, 0)
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("8_bronze")
+
+[node name="RimRight" type="MeshInstance3D" parent="Platform/Rim"]
+transform = Transform3D(1.2, 0, 0, 0, 0.34, 0, 0, 0, 16.8, 14.4, 0.17, 0)
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("8_bronze")
+
+; Inlaid ring-out line. Sits 0.03 proud of the floor at the exact X/Z limits
+; the boundary collision uses, so what the player sees is what stops them.
+
+[node name="BoundaryLines" type="Node3D" parent="Platform"]
+
+[node name="LineLeft" type="MeshInstance3D" parent="Platform/BoundaryLines"]
+transform = Transform3D(0.3, 0, 0, 0, 0.06, 0, 0, 0, 15, -13.2, 0.03, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("9_glow")
+
+[node name="LineRight" type="MeshInstance3D" parent="Platform/BoundaryLines"]
+transform = Transform3D(0.3, 0, 0, 0, 0.06, 0, 0, 0, 15, 13.2, 0.03, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("9_glow")
+
+[node name="LineBack" type="MeshInstance3D" parent="Platform/BoundaryLines"]
+transform = Transform3D(26.7, 0, 0, 0, 0.06, 0, 0, 0, 0.3, 0, 0.03, 7.2)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("9_glow")
+
+[node name="LineFront" type="MeshInstance3D" parent="Platform/BoundaryLines"]
+transform = Transform3D(26.7, 0, 0, 0, 0.06, 0, 0, 0, 0.3, 0, 0.03, -7.2)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("9_glow")
+
+[node name="CornerPosts" type="Node3D" parent="Platform"]
+
+[node name="PostBL" type="MeshInstance3D" parent="Platform/CornerPosts"]
+transform = Transform3D(1, 0, 0, 0, 1.6, 0, 0, 0, 1, -14.4, 1.14, 8.4)
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("5_stonelight")
+
+[node name="PostBLCap" type="MeshInstance3D" parent="Platform/CornerPosts"]
+transform = Transform3D(1.12, 0, 0, 0, 0.14, 0, 0, 0, 1.12, -14.4, 2.01, 8.4)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("9_glow")
+
+[node name="PostBR" type="MeshInstance3D" parent="Platform/CornerPosts"]
+transform = Transform3D(1, 0, 0, 0, 1.6, 0, 0, 0, 1, 14.4, 1.14, 8.4)
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("5_stonelight")
+
+[node name="PostBRCap" type="MeshInstance3D" parent="Platform/CornerPosts"]
+transform = Transform3D(1.12, 0, 0, 0, 0.14, 0, 0, 0, 1.12, 14.4, 2.01, 8.4)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("9_glow")
+
+[node name="PostFL" type="MeshInstance3D" parent="Platform/CornerPosts"]
+transform = Transform3D(1, 0, 0, 0, 1.6, 0, 0, 0, 1, -14.4, 1.14, -8.4)
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("5_stonelight")
+
+[node name="PostFLCap" type="MeshInstance3D" parent="Platform/CornerPosts"]
+transform = Transform3D(1.12, 0, 0, 0, 0.14, 0, 0, 0, 1.12, -14.4, 2.01, -8.4)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("9_glow")
+
+[node name="PostFR" type="MeshInstance3D" parent="Platform/CornerPosts"]
+transform = Transform3D(1, 0, 0, 0, 1.6, 0, 0, 0, 1, 14.4, 1.14, -8.4)
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("5_stonelight")
+
+[node name="PostFRCap" type="MeshInstance3D" parent="Platform/CornerPosts"]
+transform = Transform3D(1.12, 0, 0, 0, 0.14, 0, 0, 0, 1.12, 14.4, 2.01, -8.4)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("9_glow")
+
+; Stepped skirts run off both ends of the slab and dissolve into the fog,
+; so the platform does not read as a floating rectangle.
+
+[node name="Steps" type="Node3D" parent="Platform"]
+
+[node name="StepR1" type="MeshInstance3D" parent="Platform/Steps"]
+transform = Transform3D(2, 0, 0, 0, 0.4, 0, 0, 0, 13, 16, -0.28, 0)
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("4_slab")
+
+[node name="StepR2" type="MeshInstance3D" parent="Platform/Steps"]
+transform = Transform3D(2, 0, 0, 0, 0.4, 0, 0, 0, 13, 18, -0.68, 0)
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("4_slab")
+
+[node name="StepR3" type="MeshInstance3D" parent="Platform/Steps"]
+transform = Transform3D(2, 0, 0, 0, 0.4, 0, 0, 0, 13, 20, -1.08, 0)
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("4_slab")
+
+[node name="StepR4" type="MeshInstance3D" parent="Platform/Steps"]
+transform = Transform3D(2.6, 0, 0, 0, 0.4, 0, 0, 0, 13, 22.3, -1.48, 0)
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("4_slab")
+
+[node name="StepL1" type="MeshInstance3D" parent="Platform/Steps"]
+transform = Transform3D(2, 0, 0, 0, 0.4, 0, 0, 0, 13, -16, -0.28, 0)
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("4_slab")
+
+[node name="StepL2" type="MeshInstance3D" parent="Platform/Steps"]
+transform = Transform3D(2, 0, 0, 0, 0.4, 0, 0, 0, 13, -18, -0.68, 0)
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("4_slab")
+
+[node name="StepL3" type="MeshInstance3D" parent="Platform/Steps"]
+transform = Transform3D(2, 0, 0, 0, 0.4, 0, 0, 0, 13, -20, -1.08, 0)
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("4_slab")
+
+[node name="StepL4" type="MeshInstance3D" parent="Platform/Steps"]
+transform = Transform3D(2.6, 0, 0, 0, 0.4, 0, 0, 0, 13, -22.3, -1.48, 0)
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("4_slab")
+
+[node name="Pylons" type="Node3D" parent="Platform"]
+
+[node name="PylonCenter" type="MeshInstance3D" parent="Platform/Pylons"]
+transform = Transform3D(5, 0, 0, 0, 7.4, 0, 0, 0, 5, 0, -5.28, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_cyl")
+material_override = ExtResource("6_stonedark")
+
+[node name="PylonA" type="MeshInstance3D" parent="Platform/Pylons"]
+transform = Transform3D(2.6, 0, 0, 0, 7.4, 0, 0, 0, 2.6, -9, -5.28, -5.5)
+cast_shadow = 0
+mesh = SubResource("Mesh_cyl")
+material_override = ExtResource("6_stonedark")
+
+[node name="PylonB" type="MeshInstance3D" parent="Platform/Pylons"]
+transform = Transform3D(2.6, 0, 0, 0, 7.4, 0, 0, 0, 2.6, 9, -5.28, -5.5)
+cast_shadow = 0
+mesh = SubResource("Mesh_cyl")
+material_override = ExtResource("6_stonedark")
+
+[node name="PylonC" type="MeshInstance3D" parent="Platform/Pylons"]
+transform = Transform3D(2.6, 0, 0, 0, 7.4, 0, 0, 0, 2.6, -9, -5.28, 5.5)
+cast_shadow = 0
+mesh = SubResource("Mesh_cyl")
+material_override = ExtResource("6_stonedark")
+
+[node name="PylonD" type="MeshInstance3D" parent="Platform/Pylons"]
+transform = Transform3D(2.6, 0, 0, 0, 7.4, 0, 0, 0, 2.6, 9, -5.28, 5.5)
+cast_shadow = 0
+mesh = SubResource("Mesh_cyl")
+material_override = ExtResource("6_stonedark")
+
+; Collision. Floor plus four ring-out walls that line up exactly with the
+; glowing boundary inlay above.
+
+[node name="Collision" type="Node3D" parent="Platform"]
+
+[node name="ArenaFloor" type="StaticBody3D" parent="Platform/Collision"]
+
+[node name="FloorShape" type="CollisionShape3D" parent="Platform/Collision/ArenaFloor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.79, 0)
+shape = SubResource("Shape_floor")
+
+[node name="Boundaries" type="StaticBody3D" parent="Platform/Collision"]
+
+[node name="WallLeft" type="CollisionShape3D" parent="Platform/Collision/Boundaries"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -13.5, 4.5, 0)
+shape = SubResource("Shape_wall_x")
+
+[node name="WallRight" type="CollisionShape3D" parent="Platform/Collision/Boundaries"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 13.5, 4.5, 0)
+shape = SubResource("Shape_wall_x")
+
+[node name="WallBack" type="CollisionShape3D" parent="Platform/Collision/Boundaries"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.5, 7.5)
+shape = SubResource("Shape_wall_z")
+
+[node name="WallFront" type="CollisionShape3D" parent="Platform/Collision/Boundaries"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4.5, -7.5)
+shape = SubResource("Shape_wall_z")
+
+; -----------------------------------------------------------------------------
+;  BACKGROUND
+;  Four depth layers, each darker than the one in front of it:
+;    1. the chasm the platform is suspended over  (Z 10 .. 15, Y -10)
+;    2. the terrace and its colonnade             (Z 15 .. 26)
+;    3. the arcaded back wall                     (Z 28)
+;    4. the city silhouette beyond                (Z 44 .. 92, in heavy fog)
+;  Nothing in here casts shadows - the shadow budget is spent on the platform.
+; -----------------------------------------------------------------------------
+
+[node name="Background" type="Node3D" parent="."]
+
+[node name="Chasm" type="Node3D" parent="Background"]
+
+[node name="PitFloor" type="MeshInstance3D" parent="Background/Chasm"]
+transform = Transform3D(150, 0, 0, 0, 1, 0, 0, 0, 150, 0, -10.5, 20)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("12_pit")
+
+[node name="Terrace" type="Node3D" parent="Background"]
+
+[node name="TerraceDeck" type="MeshInstance3D" parent="Background/Terrace"]
+transform = Transform3D(86, 0, 0, 0, 1.4, 0, 0, 0, 11, 0, -0.7, 20.5)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("5_stonelight")
+
+[node name="TerraceEdge" type="MeshInstance3D" parent="Background/Terrace"]
+transform = Transform3D(86, 0, 0, 0, 0.14, 0, 0, 0, 0.6, 0, 0.07, 15.2)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("8_bronze")
+
+[node name="TerraceFooting" type="MeshInstance3D" parent="Background/Terrace"]
+transform = Transform3D(80, 0, 0, 0, 9, 0, 0, 0, 8, 0, -5.9, 21)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+[node name="TerraceBody" type="StaticBody3D" parent="Background/Terrace"]
+
+[node name="TerraceShape" type="CollisionShape3D" parent="Background/Terrace/TerraceBody"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.7, 20.5)
+shape = SubResource("Shape_terrace")
+
+; Two bridges span the chasm at X = +/-11, framing the centre sightline
+; instead of blocking it.
+
+[node name="Bridges" type="Node3D" parent="Background"]
+
+[node name="BridgeLeft" type="MeshInstance3D" parent="Background/Bridges"]
+transform = Transform3D(4.5, 0, 0, 0, 0.7, 0, 0, 0, 7.2, -11, -0.35, 12.3)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("5_stonelight")
+
+[node name="BridgeLeftRailA" type="MeshInstance3D" parent="Background/Bridges"]
+transform = Transform3D(0.35, 0, 0, 0, 0.75, 0, 0, 0, 7.2, -13.1, 0.37, 12.3)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+[node name="BridgeLeftRailB" type="MeshInstance3D" parent="Background/Bridges"]
+transform = Transform3D(0.35, 0, 0, 0, 0.75, 0, 0, 0, 7.2, -8.9, 0.37, 12.3)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+[node name="BridgeRight" type="MeshInstance3D" parent="Background/Bridges"]
+transform = Transform3D(4.5, 0, 0, 0, 0.7, 0, 0, 0, 7.2, 11, -0.35, 12.3)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("5_stonelight")
+
+[node name="BridgeRightRailA" type="MeshInstance3D" parent="Background/Bridges"]
+transform = Transform3D(0.35, 0, 0, 0, 0.75, 0, 0, 0, 7.2, 8.9, 0.37, 12.3)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+[node name="BridgeRightRailB" type="MeshInstance3D" parent="Background/Bridges"]
+transform = Transform3D(0.35, 0, 0, 0, 0.75, 0, 0, 0, 7.2, 13.1, 0.37, 12.3)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+; Colonnade. Columns sit at +/-5.5, 14, 22.5, 31 so the centre of the frame,
+; directly behind the fighters, stays an open gap.
+
+[node name="Colonnade" type="Node3D" parent="Background"]
+
+[node name="PillarL1" parent="Background/Colonnade" instance=ExtResource("18_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 0, 19)
+
+[node name="PillarR1" parent="Background/Colonnade" instance=ExtResource("18_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 0, 19)
+
+[node name="PillarL2" parent="Background/Colonnade" instance=ExtResource("18_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 0, 19)
+
+[node name="PillarR2" parent="Background/Colonnade" instance=ExtResource("18_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, 19)
+
+[node name="PillarL3" parent="Background/Colonnade" instance=ExtResource("18_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.5, 0, 19)
+
+[node name="PillarR3" parent="Background/Colonnade" instance=ExtResource("18_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.5, 0, 19)
+
+[node name="PillarL4" parent="Background/Colonnade" instance=ExtResource("18_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -31, 0, 19)
+
+[node name="PillarR4" parent="Background/Colonnade" instance=ExtResource("18_pillar")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 31, 0, 19)
+
+[node name="Architrave" type="MeshInstance3D" parent="Background/Colonnade"]
+transform = Transform3D(88, 0, 0, 0, 1.2, 0, 0, 0, 3.4, 0, 13.2, 19)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+[node name="Frieze" type="MeshInstance3D" parent="Background/Colonnade"]
+transform = Transform3D(88, 0, 0, 0, 0.45, 0, 0, 0, 3.8, 0, 14.02, 19)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("8_bronze")
+
+; Back wall. Piers leave 5.2-unit arcade gaps at X = 0, +/-8.4, +/-16.8 ...
+; the distant city reads through them.
+
+[node name="BackWall" type="Node3D" parent="Background"]
+
+[node name="Plinth" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(94, 0, 0, 0, 3, 0, 0, 0, 2.6, 0, -1.5, 28)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+[node name="PierL1" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(3.2, 0, 0, 0, 16, 0, 0, 0, 2.6, -4.2, 8, 28)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+[node name="PierR1" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(3.2, 0, 0, 0, 16, 0, 0, 0, 2.6, 4.2, 8, 28)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+[node name="PierL2" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(3.2, 0, 0, 0, 16, 0, 0, 0, 2.6, -12.6, 8, 28)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+[node name="PierR2" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(3.2, 0, 0, 0, 16, 0, 0, 0, 2.6, 12.6, 8, 28)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+[node name="PierL3" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(3.2, 0, 0, 0, 16, 0, 0, 0, 2.6, -21, 8, 28)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+[node name="PierR3" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(3.2, 0, 0, 0, 16, 0, 0, 0, 2.6, 21, 8, 28)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+[node name="PierL4" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(3.2, 0, 0, 0, 16, 0, 0, 0, 2.6, -29.4, 8, 28)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+[node name="PierR4" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(3.2, 0, 0, 0, 16, 0, 0, 0, 2.6, 29.4, 8, 28)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+[node name="PierL5" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(3.2, 0, 0, 0, 16, 0, 0, 0, 2.6, -37.8, 8, 28)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+[node name="PierR5" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(3.2, 0, 0, 0, 16, 0, 0, 0, 2.6, 37.8, 8, 28)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+[node name="Lintel" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(94, 0, 0, 0, 2.4, 0, 0, 0, 3, 0, 17.2, 28)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+[node name="UpperWall" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(94, 0, 0, 0, 10, 0, 0, 0, 2.6, 0, 23.4, 28)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+[node name="Cornice" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(96, 0, 0, 0, 1.2, 0, 0, 0, 3.6, 0, 29, 28)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+[node name="WindowC" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(1.1, 0, 0, 0, 2, 0, 0, 0, 0.3, 0, 23, 26.55)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("10_warm")
+
+[node name="WindowL1" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(1.1, 0, 0, 0, 2, 0, 0, 0, 0.3, -8.4, 23, 26.55)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("10_warm")
+
+[node name="WindowR1" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(1.1, 0, 0, 0, 2, 0, 0, 0, 0.3, 8.4, 23, 26.55)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("10_warm")
+
+[node name="WindowL2" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(1.1, 0, 0, 0, 2, 0, 0, 0, 0.3, -21, 23, 26.55)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("10_warm")
+
+[node name="WindowR2" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(1.1, 0, 0, 0, 2, 0, 0, 0, 0.3, 21, 23, 26.55)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("10_warm")
+
+[node name="WindowL3" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(1.1, 0, 0, 0, 2, 0, 0, 0, 0.3, -33.6, 23, 26.55)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("10_warm")
+
+[node name="WindowR3" type="MeshInstance3D" parent="Background/BackWall"]
+transform = Transform3D(1.1, 0, 0, 0, 2, 0, 0, 0, 0.3, 33.6, 23, 26.55)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("10_warm")
+
+[node name="SideWallLeft" type="MeshInstance3D" parent="Background"]
+transform = Transform3D(2.6, 0, 0, 0, 32, 0, 0, 0, 72, -45, 13, 12)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+[node name="SideWallRight" type="MeshInstance3D" parent="Background"]
+transform = Transform3D(2.6, 0, 0, 0, 32, 0, 0, 0, 72, 45, 13, 12)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("6_stonedark")
+
+; Banners hang in the colonnade gaps. Blue on the left half, red on the right,
+; so each side of the stage reads as a corner.
+
+[node name="Banners" type="Node3D" parent="Background"]
+
+[node name="BannerL1" parent="Background/Banners" instance=ExtResource("19_banner")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -9.75, 13.4, 17.1)
+cloth_material = ExtResource("14_blue")
+
+[node name="BannerL2" parent="Background/Banners" instance=ExtResource("19_banner")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -18.25, 13.4, 17.1)
+cloth_material = ExtResource("14_blue")
+sway_period = 5.2
+
+[node name="BannerL3" parent="Background/Banners" instance=ExtResource("19_banner")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -26.75, 13.4, 17.1)
+cloth_material = ExtResource("14_blue")
+sway_period = 4.1
+
+[node name="BannerR1" parent="Background/Banners" instance=ExtResource("19_banner")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.75, 13.4, 17.1)
+cloth_material = ExtResource("13_red")
+
+[node name="BannerR2" parent="Background/Banners" instance=ExtResource("19_banner")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18.25, 13.4, 17.1)
+cloth_material = ExtResource("13_red")
+sway_period = 5.2
+
+[node name="BannerR3" parent="Background/Banners" instance=ExtResource("19_banner")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26.75, 13.4, 17.1)
+cloth_material = ExtResource("13_red")
+sway_period = 4.1
+
+[node name="Lanterns" type="Node3D" parent="Background"]
+
+[node name="LanternL1" parent="Background/Lanterns" instance=ExtResource("20_lantern")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.5, 12.2, 17.2)
+
+[node name="LanternR1" parent="Background/Lanterns" instance=ExtResource("20_lantern")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.5, 12.2, 17.2)
+
+[node name="LanternL2" parent="Background/Lanterns" instance=ExtResource("20_lantern")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14, 12.2, 17.2)
+
+[node name="LanternR2" parent="Background/Lanterns" instance=ExtResource("20_lantern")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 12.2, 17.2)
+
+[node name="LanternL3" parent="Background/Lanterns" instance=ExtResource("20_lantern")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22.5, 12.2, 17.2)
+
+[node name="LanternR3" parent="Background/Lanterns" instance=ExtResource("20_lantern")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22.5, 12.2, 17.2)
+
+; City silhouette. Pure value shapes - the fog does the rest.
+
+[node name="DistantCity" type="Node3D" parent="Background"]
+
+[node name="BlockA" type="MeshInstance3D" parent="Background/DistantCity"]
+transform = Transform3D(14, 0, 0, 0, 21, 0, 0, 0, 12, -9, 0.5, 48)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("24_city")
+
+[node name="BlockB" type="MeshInstance3D" parent="Background/DistantCity"]
+transform = Transform3D(16, 0, 0, 0, 17, 0, 0, 0, 12, 10, -1.5, 44)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("24_city")
+
+[node name="BlockC" type="MeshInstance3D" parent="Background/DistantCity"]
+transform = Transform3D(12, 0, 0, 0, 25, 0, 0, 0, 12, 24, 2.5, 55)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("24_city")
+
+[node name="BlockD" type="MeshInstance3D" parent="Background/DistantCity"]
+transform = Transform3D(13, 0, 0, 0, 19, 0, 0, 0, 12, -27, -0.5, 52)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("24_city")
+
+[node name="BlockE" type="MeshInstance3D" parent="Background/DistantCity"]
+transform = Transform3D(18, 0, 0, 0, 15, 0, 0, 0, 14, 0, -2.5, 60)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("24_city")
+
+[node name="TowerA" type="MeshInstance3D" parent="Background/DistantCity"]
+transform = Transform3D(11, 0, 0, 0, 53, 0, 0, 0, 11, 0, 16.5, 84)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("24_city")
+
+[node name="TowerASpire" type="MeshInstance3D" parent="Background/DistantCity"]
+transform = Transform3D(2.5, 0, 0, 0, 14, 0, 0, 0, 2.5, 0, 50, 84)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("24_city")
+
+[node name="TowerB" type="MeshInstance3D" parent="Background/DistantCity"]
+transform = Transform3D(9, 0, 0, 0, 47, 0, 0, 0, 9, -20, 13.5, 75)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("24_city")
+
+[node name="TowerC" type="MeshInstance3D" parent="Background/DistantCity"]
+transform = Transform3D(13, 0, 0, 0, 57, 0, 0, 0, 13, 17, 18.5, 92)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("24_city")
+
+[node name="TowerCSpire" type="MeshInstance3D" parent="Background/DistantCity"]
+transform = Transform3D(3, 0, 0, 0, 12, 0, 0, 0, 3, 17, 53, 92)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("24_city")
+
+[node name="TowerD" type="MeshInstance3D" parent="Background/DistantCity"]
+transform = Transform3D(10, 0, 0, 0, 43, 0, 0, 0, 10, 36, 11.5, 79)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("24_city")
+
+[node name="TowerE" type="MeshInstance3D" parent="Background/DistantCity"]
+transform = Transform3D(12, 0, 0, 0, 51, 0, 0, 0, 12, -40, 15.5, 88)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("24_city")
+
+[node name="CityLightA" type="MeshInstance3D" parent="Background/DistantCity"]
+transform = Transform3D(0.9, 0, 0, 0, 1.6, 0, 0, 0, 0.3, -10.5, 6, 41.9)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("10_warm")
+
+[node name="CityLightB" type="MeshInstance3D" parent="Background/DistantCity"]
+transform = Transform3D(0.9, 0, 0, 0, 1.6, 0, 0, 0, 0.3, 12, 1.5, 37.9)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("10_warm")
+
+[node name="CityLightC" type="MeshInstance3D" parent="Background/DistantCity"]
+transform = Transform3D(0.9, 0, 0, 0, 1.6, 0, 0, 0, 0.3, 22, 9, 48.9)
+cast_shadow = 0
+mesh = SubResource("Mesh_box")
+material_override = ExtResource("10_warm")
+
+; -----------------------------------------------------------------------------
+;  PROPS
+;  Four braziers stand on the platform rim, outside the playable area, and four
+;  more line the terrace edge. Clutter is pushed out past X = +/-24 where the
+;  match camera never looks, so the fight space itself stays swept clean.
+; -----------------------------------------------------------------------------
+
+[node name="Props" type="Node3D" parent="."]
+
+[node name="Braziers" type="Node3D" parent="Props"]
+
+[node name="BrazierRimFL" parent="Props/Braziers" instance=ExtResource("17_brazier")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.4, 0.34, -3.2)
+
+[node name="BrazierRimFR" parent="Props/Braziers" instance=ExtResource("17_brazier")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.4, 0.34, -3.2)
+
+[node name="BrazierRimBL" parent="Props/Braziers" instance=ExtResource("17_brazier")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -14.4, 0.34, 3.2)
+
+[node name="BrazierRimBR" parent="Props/Braziers" instance=ExtResource("17_brazier")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.4, 0.34, 3.2)
+
+[node name="BrazierTerraceL1" parent="Props/Braziers" instance=ExtResource("17_brazier")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 0, 16.4)
+base_energy = 2.6
+
+[node name="BrazierTerraceR1" parent="Props/Braziers" instance=ExtResource("17_brazier")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11, 0, 16.4)
+base_energy = 2.6
+
+[node name="BrazierTerraceL2" parent="Props/Braziers" instance=ExtResource("17_brazier")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -22, 0, 16.4)
+base_energy = 2.6
+
+[node name="BrazierTerraceR2" parent="Props/Braziers" instance=ExtResource("17_brazier")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 22, 0, 16.4)
+base_energy = 2.6
+
+[node name="Clutter" type="Node3D" parent="Props"]
+
+[node name="CrateA" parent="Props/Clutter" instance=ExtResource("21_crate")]
+transform = Transform3D(0.951, 0, -0.309, 0, 1, 0, 0.309, 0, 0.951, 26.8, 0, 22.6)
+
+[node name="CrateB" parent="Props/Clutter" instance=ExtResource("21_crate")]
+transform = Transform3D(0.906, 0, 0.423, 0, 1, 0, -0.423, 0, 0.906, 28.2, 0, 23.6)
+
+[node name="CrateC" parent="Props/Clutter" instance=ExtResource("21_crate")]
+transform = Transform3D(0.766, 0, -0.643, 0, 1, 0, 0.643, 0, 0.766, 26.8, 1.2, 22.6)
+
+[node name="CrateD" parent="Props/Clutter" instance=ExtResource("21_crate")]
+transform = Transform3D(0.978, 0, 0.208, 0, 1, 0, -0.208, 0, 0.978, -30.5, 0, 22)
+
+[node name="BarrelA" parent="Props/Clutter" instance=ExtResource("22_barrel")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -26.2, 0, 23.2)
+
+[node name="BarrelB" parent="Props/Clutter" instance=ExtResource("22_barrel")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -24.8, 0, 22)
+
+[node name="BarrelC" parent="Props/Clutter" instance=ExtResource("22_barrel")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32.5, 0, 21.6)
+
+[node name="RubbleA" parent="Props/Clutter" instance=ExtResource("23_rubble")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -17.5, 0, 24)
+
+[node name="RubbleB" parent="Props/Clutter" instance=ExtResource("23_rubble")]
+transform = Transform3D(-0.5, 0, -0.866, 0, 1, 0, 0.866, 0, -0.5, 18.5, 0, 23.4)
+
+[node name="RubbleC" parent="Props/Clutter" instance=ExtResource("23_rubble")]
+transform = Transform3D(-0.94, 0, 0.342, 0, 1, 0, -0.342, 0, -0.94, -6.5, 0, 24.6)
+
+; -----------------------------------------------------------------------------
+;  ATMOSPHERE
+;  CPUParticles3D rather than GPU particles - these run identically under the
+;  GL Compatibility renderer and the counts are far too low to matter.
+;  Both emitters are kept off the fight plane so nothing ever drifts between
+;  the camera and a fighter.
+; -----------------------------------------------------------------------------
+
+[node name="Atmosphere" type="Node3D" parent="."]
+
+[node name="DustMotes" type="CPUParticles3D" parent="Atmosphere"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6, 4)
+cast_shadow = 0
+material_override = ExtResource("15_dot")
+amount = 70
+lifetime = 14.0
+preprocess = 8.0
+randomness = 0.8
+lifetime_randomness = 0.5
+draw_order = 2
+mesh = SubResource("Mesh_mote")
+emission_shape = 3
+emission_box_extents = Vector3(19, 7, 9)
+direction = Vector3(1, 0.3, 0)
+spread = 55.0
+gravity = Vector3(0, -0.015, 0)
+initial_velocity_min = 0.04
+initial_velocity_max = 0.22
+scale_amount_min = 0.5
+scale_amount_max = 1.6
+color_ramp = SubResource("Grad_mote")
+
+[node name="GroundMist" type="CPUParticles3D" parent="Atmosphere"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3.5, 9)
+cast_shadow = 0
+material_override = ExtResource("16_mist")
+amount = 18
+lifetime = 26.0
+preprocess = 14.0
+randomness = 0.9
+lifetime_randomness = 0.4
+draw_order = 2
+mesh = SubResource("Mesh_mistpuff")
+emission_shape = 3
+emission_box_extents = Vector3(30, 1.5, 15)
+direction = Vector3(1, 0.1, 0)
+spread = 25.0
+gravity = Vector3(0, 0.02, 0)
+initial_velocity_min = 0.1
+initial_velocity_max = 0.35
+scale_amount_min = 0.7
+scale_amount_max = 1.4
+color_ramp = SubResource("Grad_mist")

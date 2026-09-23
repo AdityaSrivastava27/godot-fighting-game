@@ -1,0 +1,31 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+; The inlaid disc at centre stage. A touch darker and warmer than the fight
+; surface so the starting mark reads without needing its own light.
+
+[sub_resource type="FastNoiseLite" id="Noise_med"]
+noise_type = 3
+seed = 133
+frequency = 0.06
+fractal_octaves = 4
+
+[sub_resource type="Gradient" id="Ramp_med"]
+offsets = PackedFloat32Array(0, 1)
+colors = PackedColorArray(0.78, 0.78, 0.78, 1, 1, 1, 1, 1)
+
+[sub_resource type="NoiseTexture2D" id="Tex_med"]
+width = 256
+height = 256
+seamless = true
+color_ramp = SubResource("Ramp_med")
+noise = SubResource("Noise_med")
+
+[resource]
+resource_name = "FloorMedallion"
+albedo_color = Color(0.335, 0.3, 0.272, 1)
+albedo_texture = SubResource("Tex_med")
+metallic = 0.0
+roughness = 0.88
+uv1_scale = Vector3(0.45, 0.45, 0.45)
+uv1_triplanar = true
+uv1_world_triplanar = true

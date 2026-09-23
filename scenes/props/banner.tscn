@@ -1,0 +1,45 @@
+[gd_scene format=3]
+
+; Hangs from its origin - place the origin at the rail and the cloth falls
+; below it. Tint is chosen per instance via the script's cloth_material.
+
+[ext_resource type="Material" path="res://materials/metal_dark.tres" id="1_metal"]
+[ext_resource type="Material" path="res://materials/banner_red.tres" id="2_red"]
+[ext_resource type="Material" path="res://materials/bronze_trim.tres" id="3_bronze"]
+[ext_resource type="Script" path="res://scripts/banner.gd" id="4_script"]
+
+[sub_resource type="CylinderMesh" id="Mesh_rail"]
+material = ExtResource("1_metal")
+top_radius = 0.09
+bottom_radius = 0.09
+height = 2.8
+radial_segments = 8
+rings = 1
+
+[sub_resource type="BoxMesh" id="Mesh_cloth"]
+material = ExtResource("2_red")
+size = Vector3(2.4, 6.0, 0.07)
+
+[sub_resource type="BoxMesh" id="Mesh_hem"]
+material = ExtResource("3_bronze")
+size = Vector3(2.45, 0.22, 0.1)
+
+[node name="Banner" type="Node3D"]
+script = ExtResource("4_script")
+cloth_material = ExtResource("2_red")
+sway_degrees = 2.6
+sway_period = 4.5
+
+[node name="Rail" type="MeshInstance3D" parent="."]
+transform = Transform3D(0, -1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0)
+mesh = SubResource("Mesh_rail")
+
+[node name="Cloth" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -3.05, 0)
+cast_shadow = 2
+mesh = SubResource("Mesh_cloth")
+
+[node name="Hem" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -6.05, 0)
+cast_shadow = 0
+mesh = SubResource("Mesh_hem")

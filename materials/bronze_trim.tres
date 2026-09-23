@@ -1,0 +1,12 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+; Warm bronze edging on the platform rim - catches the brazier light and
+; draws a crisp line around the playfield. Kept low-saturation and fairly
+; rough so it does not turn into a band of orange highlight.
+
+[resource]
+resource_name = "BronzeTrim"
+albedo_color = Color(0.3, 0.215, 0.115, 1)
+metallic = 0.7
+metallic_specular = 0.35
+roughness = 0.52

@@ -1,0 +1,14 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+; Deep, low-key cloth. Banners sit directly behind the fighters, so their
+; chroma is held well below anything a character is likely to wear.
+
+[resource]
+resource_name = "BannerRed"
+cull_mode = 2
+albedo_color = Color(0.24, 0.048, 0.05, 1)
+metallic = 0.0
+roughness = 0.9
+emission_enabled = true
+emission = Color(0.34, 0.06, 0.05, 1)
+emission_energy_multiplier = 0.12

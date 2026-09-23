@@ -1,0 +1,37 @@
+[gd_resource type="Environment" format=3 uid="uid://baf5nqfql6fua"]
+
+[ext_resource type="Sky" uid="uid://nlmxdorkt224" path="res://environment/sky_dusk.tres" id="1_sky"]
+
+[resource]
+resource_name = "ArenaEnvironment"
+background_mode = 2
+sky = ExtResource("1_sky")
+ambient_light_source = 3
+ambient_light_color = Color(0.29, 0.33, 0.45, 1)
+ambient_light_sky_contribution = 0.5
+ambient_light_energy = 0.75
+reflected_light_source = 2
+tonemap_mode = 3
+tonemap_exposure = 1.05
+tonemap_white = 3.0
+glow_enabled = true
+glow_levels/2 = 0.4
+glow_levels/3 = 1.0
+glow_levels/4 = 0.7
+glow_levels/5 = 0.4
+glow_normalized = true
+glow_intensity = 0.55
+glow_bloom = 0.1
+glow_hdr_threshold = 0.9
+fog_enabled = true
+fog_mode = 1
+fog_light_color = Color(0.21, 0.25, 0.36, 1)
+fog_light_energy = 1.5
+fog_sun_scatter = 0.1
+fog_density = 0.006
+fog_aerial_perspective = 0.4
+fog_sky_affect = 0.2
+fog_depth_begin = 30.0
+fog_depth_end = 88.0
+adjustment_enabled = true
+adjustment_contrast = 1.05

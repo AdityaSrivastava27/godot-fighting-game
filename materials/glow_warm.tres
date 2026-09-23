@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+; Lanterns and distant window lights.
+
+[resource]
+resource_name = "GlowWarm"
+shading_mode = 0
+albedo_color = Color(1, 0.68, 0.36, 1)
+emission_enabled = true
+emission = Color(1, 0.62, 0.28, 1)
+emission_energy_multiplier = 1.15

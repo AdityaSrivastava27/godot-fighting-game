@@ -1,0 +1,51 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+; Main fighting-surface stone. Mid-value and desaturated on purpose:
+; fighters (usually saturated red/blue) read clearly against it.
+;
+; The noise is squeezed through a narrow colour ramp (0.78 -> 1.0) so it only
+; ever grains the surface. Letting raw 0-1 noise into albedo turns the floor
+; into camouflage and destroys the flat value the fighters need to sit on.
+
+[sub_resource type="FastNoiseLite" id="Noise_floor"]
+noise_type = 3
+seed = 7
+frequency = 0.055
+fractal_octaves = 5
+fractal_lacunarity = 2.1
+fractal_gain = 0.5
+
+[sub_resource type="Gradient" id="Ramp_floor"]
+offsets = PackedFloat32Array(0, 1)
+colors = PackedColorArray(0.78, 0.78, 0.78, 1, 1, 1, 1, 1)
+
+[sub_resource type="NoiseTexture2D" id="Tex_floor_albedo"]
+width = 256
+height = 256
+seamless = true
+color_ramp = SubResource("Ramp_floor")
+noise = SubResource("Noise_floor")
+
+[sub_resource type="NoiseTexture2D" id="Tex_floor_normal"]
+width = 256
+height = 256
+seamless = true
+as_normal_map = true
+bump_strength = 1.6
+noise = SubResource("Noise_floor")
+
+[resource]
+resource_name = "FloorStone"
+albedo_color = Color(0.31, 0.32, 0.345, 1)
+albedo_texture = SubResource("Tex_floor_albedo")
+metallic = 0.0
+metallic_specular = 0.25
+roughness = 0.9
+roughness_texture = SubResource("Tex_floor_albedo")
+roughness_texture_channel = 0
+normal_enabled = true
+normal_scale = 0.5
+normal_texture = SubResource("Tex_floor_normal")
+uv1_scale = Vector3(0.45, 0.45, 0.45)
+uv1_triplanar = true
+uv1_world_triplanar = true

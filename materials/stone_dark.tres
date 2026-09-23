@@ -1,0 +1,31 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+; Far architecture. Low value so the background never competes with the
+; fighters, but not black - the depth fog needs something to tint.
+
+[sub_resource type="FastNoiseLite" id="Noise_wall"]
+noise_type = 3
+seed = 91
+frequency = 0.05
+fractal_octaves = 3
+
+[sub_resource type="Gradient" id="Ramp_wall"]
+offsets = PackedFloat32Array(0, 1)
+colors = PackedColorArray(0.8, 0.8, 0.8, 1, 1, 1, 1, 1)
+
+[sub_resource type="NoiseTexture2D" id="Tex_wall"]
+width = 256
+height = 256
+seamless = true
+color_ramp = SubResource("Ramp_wall")
+noise = SubResource("Noise_wall")
+
+[resource]
+resource_name = "StoneDark"
+albedo_color = Color(0.23, 0.232, 0.265, 1)
+albedo_texture = SubResource("Tex_wall")
+metallic = 0.0
+roughness = 0.96
+uv1_scale = Vector3(0.35, 0.35, 0.35)
+uv1_triplanar = true
+uv1_world_triplanar = true

@@ -1,0 +1,17 @@
+[gd_resource type="Sky" format=3 uid="uid://nlmxdorkt224"]
+
+[sub_resource type="ProceduralSkyMaterial" id="Sky_dusk"]
+sky_top_color = Color(0.043, 0.055, 0.115, 1)
+sky_horizon_color = Color(0.29, 0.2, 0.26, 1)
+sky_curve = 0.13
+ground_bottom_color = Color(0.025, 0.027, 0.04, 1)
+ground_horizon_color = Color(0.2, 0.14, 0.17, 1)
+ground_curve = 0.06
+ground_energy_multiplier = 0.6
+sun_angle_max = 24.0
+sun_curve = 0.12
+
+[resource]
+resource_name = "SkyDusk"
+sky_material = SubResource("Sky_dusk")
+radiance_size = 2

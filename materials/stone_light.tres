@@ -1,0 +1,41 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+; Columns and terrace masonry - the mid-ground tier.
+
+[sub_resource type="FastNoiseLite" id="Noise_col"]
+noise_type = 3
+seed = 44
+frequency = 0.075
+fractal_octaves = 4
+
+[sub_resource type="Gradient" id="Ramp_col"]
+offsets = PackedFloat32Array(0, 1)
+colors = PackedColorArray(0.76, 0.76, 0.76, 1, 1, 1, 1, 1)
+
+[sub_resource type="NoiseTexture2D" id="Tex_col"]
+width = 256
+height = 256
+seamless = true
+color_ramp = SubResource("Ramp_col")
+noise = SubResource("Noise_col")
+
+[sub_resource type="NoiseTexture2D" id="Tex_col_n"]
+width = 256
+height = 256
+seamless = true
+as_normal_map = true
+bump_strength = 2.0
+noise = SubResource("Noise_col")
+
+[resource]
+resource_name = "StoneLight"
+albedo_color = Color(0.265, 0.262, 0.278, 1)
+albedo_texture = SubResource("Tex_col")
+metallic = 0.0
+roughness = 0.92
+normal_enabled = true
+normal_scale = 0.6
+normal_texture = SubResource("Tex_col_n")
+uv1_scale = Vector3(0.5, 0.5, 0.5)
+uv1_triplanar = true
+uv1_world_triplanar = true
