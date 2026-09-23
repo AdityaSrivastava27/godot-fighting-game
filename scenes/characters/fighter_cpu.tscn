@@ -35,8 +35,15 @@
 ;  Bind pose carries an 11 degree arm splay - two degrees wider than Kestrel,
 ;  because this torso is wider and the forearms have more thigh to clear.
 ;
-;  Geometry only. No script, no physics body, no collision shape, no AI - the
-;  "CPU" in the name is which side of the arena it stands on, nothing more.
+;  No gameplay here - no script, no physics body, no collision shape, and no
+;  decision of any kind. The AnimationPlayer and AnimationTree at the bottom
+;  are not an exception to that: they are the rig's own locomotion clips and
+;  the blend that mixes them, and they decide nothing on their own. The tree
+;  exposes exactly one parameter, blend_position, and sits at idle until
+;  something outside writes to it. In the arena that writer is cpu_movement.gd
+;  on the instance, which is where the "CPU" in the name finally means
+;  something; drop this scene in anywhere else and it stands in its fighting
+;  stance, which is the right thing for a scene that is otherwise pure art.
 ; =============================================================================
 
 [ext_resource type="Material" path="res://materials/characters/skin_cpu.tres" id="1_skin"]
@@ -47,6 +54,7 @@
 [ext_resource type="Material" path="res://materials/characters/accent_ember.tres" id="6_ember"]
 [ext_resource type="Material" path="res://materials/characters/eye_white.tres" id="7_eyew"]
 [ext_resource type="Material" path="res://materials/characters/eye_dark.tres" id="8_eyed"]
+[ext_resource type="AnimationLibrary" path="res://animations/ironjaw_locomotion.tres" id="9_locomotion"]
 
 ; --- skin ---------------------------------------------------------------
 
@@ -328,6 +336,77 @@ size = Vector3(0.078, 0.016, 0.024)
 [sub_resource type="BoxMesh" id="Mesh_scar"]
 material = ExtResource("6_ember")
 size = Vector3(0.018, 0.115, 0.02)
+
+; =============================================================================
+;  LOCOMOTION BLEND
+;  The five clips in ironjaw_locomotion.tres arranged on one BlendSpace2D.
+;  Same layout, same axes and same triangles as Kestrel's, because the driver
+;  is the same driver - see scripts/fighter_movement.gd.
+;
+;    x = strafe   -1 is the fighter's own left, +1 its own right
+;    y = advance  -1 is straight away from the opponent, +1 straight at it
+;
+;  Those are the same two axes the movement code already resolves its intent
+;  into, so the driver is a direct hand-off of a value it has computed anyway.
+;
+;  Idle sits at the origin. That single placement is what makes stopping and
+;  changing direction work without any state machine: the driver feeds the
+;  blend the fighter's own velocity, and since that velocity is already
+;  accelerated and decelerated by the movement code, the blend point slides
+;  smoothly between clips on a direction change and coasts back to the origin
+;  - to idle - as the fighter comes to rest. There is nothing to transition
+;  BETWEEN, so there is no transition to get wrong. For this fighter that is
+;  what turns a spacing decision into an animation: cpu_movement.gd only ever
+;  says how far and which way, and the clip follows.
+;
+;  The four triangles fan out from the origin, which bounds the reachable set
+;  to the diamond |x| + |y| <= 1. The driver projects onto that same diamond,
+;  so a diagonal arrives as an even mix of a walk and a hop rather than being
+;  silently clamped by the blend space.
+;
+;  sync is OFF deliberately. Syncing would drag every clip onto one normalised
+;  clock, and idle is five times the length of a hop - held in sync the idle
+;  would race whenever it was mixed with one.
+; =============================================================================
+
+[sub_resource type="AnimationNodeAnimation" id="Blend_idle"]
+animation = &"idle"
+
+[sub_resource type="AnimationNodeAnimation" id="Blend_walk_forward"]
+animation = &"walk_forward"
+
+[sub_resource type="AnimationNodeAnimation" id="Blend_walk_back"]
+animation = &"walk_back"
+
+[sub_resource type="AnimationNodeAnimation" id="Blend_hop_left"]
+animation = &"hop_left"
+
+[sub_resource type="AnimationNodeAnimation" id="Blend_hop_right"]
+animation = &"hop_right"
+
+[sub_resource type="AnimationNodeBlendSpace2D" id="BlendSpace_locomotion"]
+blend_point_0/node = SubResource("Blend_idle")
+blend_point_0/pos = Vector2(0, 0)
+blend_point_1/node = SubResource("Blend_walk_forward")
+blend_point_1/pos = Vector2(0, 1)
+blend_point_2/node = SubResource("Blend_walk_back")
+blend_point_2/pos = Vector2(0, -1)
+blend_point_3/node = SubResource("Blend_hop_left")
+blend_point_3/pos = Vector2(-1, 0)
+blend_point_4/node = SubResource("Blend_hop_right")
+blend_point_4/pos = Vector2(1, 0)
+min_space = Vector2(-1, -1)
+max_space = Vector2(1, 1)
+snap = Vector2(0.05, 0.05)
+x_label = "strafe"
+y_label = "advance"
+; Wound counter-clockwise from the idle point: right-forward, forward-left,
+; left-back, back-right. auto_triangles is off so this stays fixed rather than
+; being re-derived, and a point outside the diamond can never fall through a
+; seam the solver happened to draw differently.
+auto_triangles = false
+triangles = PackedInt32Array(0, 4, 1, 0, 1, 3, 0, 3, 2, 0, 2, 4)
+sync = false
 
 ; =============================================================================
 ;  RIG
@@ -839,3 +918,32 @@ mesh = SubResource("Mesh_eyebrow")
 [node name="Ear_L" type="MeshInstance3D" parent="Rig/Hips/Spine/Chest/Neck/Head"]
 transform = Transform3D(0.42, 0, 0, 0, 1, 0, 0, 0, 0.78, -0.138, 0.055, 0.015)
 mesh = SubResource("Mesh_ear")
+
+; =============================================================================
+;  ANIMATION
+;  The same arrangement Kestrel carries, pointed at Ironjaw's own library.
+;
+;  root_node is left at its default of "..", which resolves to FighterCpu, so
+;  every track path in the library is written relative to the scene root and
+;  stays valid however this scene is parented in the arena.
+;
+;  The library is mounted under the empty name, so its clips are addressed as
+;  "idle", "walk_forward" and so on with no prefix - that is the spelling the
+;  AnimationNodeAnimation sub-resources above use.
+;
+;  The AnimationTree processes on idle, not physics: the blend point is set
+;  from _physics_process at 60 Hz but the pose itself is sampled per drawn
+;  frame, so the fighter animates at the display rate rather than in physics
+;  steps.
+; =============================================================================
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+"": ExtResource("9_locomotion")
+}
+
+[node name="AnimationTree" type="AnimationTree" parent="."]
+tree_root = SubResource("BlendSpace_locomotion")
+anim_player = NodePath("../AnimationPlayer")
+active = true
+parameters/blend_position = Vector2(0, 0)

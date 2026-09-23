@@ -15,8 +15,10 @@
 ;    - A cool directional rim light from behind separates silhouettes.
 ;    - Depth fog starts at 26 units, so the background reads as flat value.
 ;
-;  Nothing here moves gameplay state. The only scripts are fire flicker and
-;  banner sway, both cosmetic.
+;  Scripts here are the two movement drivers on the fighters below, plus fire
+;  flicker and banner sway, which are cosmetic. Nothing in the set decides a
+;  match: there is no health, no attack, no round and no timer yet, so the
+;  fighters move and face each other and nothing else happens.
 ; =============================================================================
 
 [ext_resource type="Environment" path="res://environment/arena_env.tres" id="1_env"]
@@ -47,6 +49,7 @@
 [ext_resource type="PackedScene" path="res://scenes/characters/fighter_player.tscn" id="26_player"]
 [ext_resource type="PackedScene" path="res://scenes/characters/fighter_cpu.tscn" id="27_cpu"]
 [ext_resource type="Script" path="res://scripts/player_movement.gd" id="28_playermove"]
+[ext_resource type="Script" path="res://scripts/cpu_movement.gd" id="29_cpumove"]
 
 ; Two shared primitives do nearly all the work. Every block below is the same
 ; unit cube or unit cylinder scaled by its node transform, and the stone
@@ -975,13 +978,26 @@ transform = Transform3D(-0.94, 0, 0.342, 0, 1, 0, -0.342, 0, -0.94, -6.5, 0, 24.
 ;  Both stand at y = 0 on the walking surface, well inside the X = +/-13
 ;  ring-out lines.
 ;
-;  Ironjaw is geometry only - no script, no body, no shape. Kestrel is the
-;  same scene plus player_movement.gd, set on the instance rather than inside
-;  fighter_player.tscn so the character scene stays the pure art asset its own
-;  header promises and can still be dropped in on either side. The script
-;  carries the 12-degree cheat above with it, so Kestrel holds this pose on
-;  frame one and keeps it all the way around the stage rather than snapping
-;  to exact profile the moment play starts.
+;  Each fighter is its character scene plus a movement script, set on the
+;  instance rather than inside the character scene so those stay the pure art
+;  assets their own headers promise and either one can be dropped in on either
+;  side. Both scripts extend fighter_movement.gd and differ only in where the
+;  stick comes from: player_movement.gd reads the keyboard, cpu_movement.gd
+;  derives it from the range it wants to hold. Each names the other as its
+;  opponent, which is the whole of the wiring - "forward" is resolved from
+;  that every frame, not from the arena's +X axis.
+;
+;  Both scripts carry the 12-degree cheat above with them, and it takes its
+;  sign from the direction each is facing, so the two roll toward the camera
+;  rather than one of them rolling away from it. That is what holds this
+;  round-start pose on frame one and keeps it all the way around the stage,
+;  instead of either fighter snapping to exact profile the moment play starts.
+;
+;  Ironjaw keeps the movement script's default speeds, which are Kestrel's.
+;  The exports are per-instance, so giving the grappler his own heavier gait
+;  is a tuning pass here and not a code change - but the locomotion clips have
+;  no stride matching, so a speed that drifts far from the one the walk cycle
+;  was authored against will start to skate.
 ; -----------------------------------------------------------------------------
 
 [node name="Fighters" type="Node3D" parent="."]
@@ -991,8 +1007,10 @@ transform = Transform3D(0.2079, 0, -0.9781, 0, 1, 0, 0.9781, 0, 0.2079, -3.6, 0,
 script = ExtResource("28_playermove")
 opponent = NodePath("../Ironjaw")
 
-[node name="Ironjaw" parent="Fighters" instance=ExtResource("27_cpu")]
+[node name="Ironjaw" parent="Fighters" node_paths=PackedStringArray("opponent") instance=ExtResource("27_cpu")]
 transform = Transform3D(0.2079, 0, 0.9781, 0, 1, 0, -0.9781, 0, 0.2079, 3.6, 0, 0)
+script = ExtResource("29_cpumove")
+opponent = NodePath("../Kestrel")
 
 ; -----------------------------------------------------------------------------
 ;  ATMOSPHERE
