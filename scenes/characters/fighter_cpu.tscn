@@ -19,6 +19,14 @@
 ;  two scenes drop into the arena the same way. Same rig contract too: every
 ;  joint is a bare Node3D at its centre of rotation, meshes hang off it.
 ;
+;  TRANSFORM3D IS ROW-MAJOR. The twelve floats of a .tscn transform are
+;  rows[0], rows[1], rows[2], origin - NOT the three basis axes. The axis a
+;  local direction maps to is a COLUMN: local +X -> (f1, f4, f7), +Y ->
+;  (f2, f5, f8), +Z -> (f3, f6, f9). Write the axes straight across instead
+;  and you store the transpose, which for a rotation is its inverse, so every
+;  angle comes out silently negated. Verify a rotation by reading the column:
+;  this scene's faces must give local +Z a positive z, so forward points -Z.
+;
 ;    Hips -> Spine -> Chest -> Neck -> Head
 ;                  -> Shoulder_* -> UpperArm_* -> LowerArm_* -> Hand_*
 ;                                   -> Thumb/Index/Middle/Ring/Little (2 each)
@@ -351,11 +359,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.075, -0.18)
 mesh = SubResource("Mesh_buckle")
 
 [node name="SashTailA" type="MeshInstance3D" parent="Rig/Hips"]
-transform = Transform3D(0.9945, 0.1045, 0, -0.1045, 0.9945, 0, 0, 0, 1, 0.065, -0.115, -0.175)
+transform = Transform3D(0.9945, -0.1045, 0, 0.1045, 0.9945, 0, 0, 0, 1, 0.065, -0.115, -0.175)
 mesh = SubResource("Mesh_sashtail")
 
 [node name="SashTailB" type="MeshInstance3D" parent="Rig/Hips"]
-transform = Transform3D(0.9877, -0.1564, 0, 0.1564, 0.9877, 0, 0, 0, 1, -0.055, -0.135, -0.172)
+transform = Transform3D(0.9877, 0.1564, 0, -0.1564, 0.9877, 0, 0, 0, 1, -0.055, -0.135, -0.172)
 mesh = SubResource("Mesh_sashtail")
 
 [node name="UpperLeg_R" type="Node3D" parent="Rig/Hips"]
@@ -473,25 +481,25 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.31, 0.02)
 mesh = SubResource("Mesh_traps")
 
 [node name="HarnessA" type="MeshInstance3D" parent="Rig/Hips/Spine/Chest"]
-transform = Transform3D(0.9135, -0.4067, 0, 0.4067, 0.9135, 0, 0, 0, 1, 0.06, 0.09, -0.19)
+transform = Transform3D(0.9135, 0.4067, 0, -0.4067, 0.9135, 0, 0, 0, 1, 0.06, 0.09, -0.19)
 mesh = SubResource("Mesh_harness")
 
 [node name="HarnessB" type="MeshInstance3D" parent="Rig/Hips/Spine/Chest"]
-transform = Transform3D(0.9135, 0.4067, 0, -0.4067, 0.9135, 0, 0, 0, 1, -0.06, 0.09, -0.19)
+transform = Transform3D(0.9135, -0.4067, 0, 0.4067, 0.9135, 0, 0, 0, 1, -0.06, 0.09, -0.19)
 mesh = SubResource("Mesh_harness")
 
 ; Torus rolled 90 deg about X so its axis points forward and the ring faces
 ; the camera at the crossing point of the two straps.
 
 [node name="HarnessRing" type="MeshInstance3D" parent="Rig/Hips/Spine/Chest"]
-transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.09, -0.205)
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.09, -0.205)
 mesh = SubResource("Mesh_harnessring")
 
 [node name="Shoulder_R" type="Node3D" parent="Rig/Hips/Spine/Chest"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.1, 0.35, 0)
 
 [node name="UpperArm_R" type="Node3D" parent="Rig/Hips/Spine/Chest/Shoulder_R"]
-transform = Transform3D(0.9816, 0.1908, 0, -0.1908, 0.9816, 0, 0, 0, 1, 0.23, -0.02, 0)
+transform = Transform3D(0.9816, -0.1908, 0, 0.1908, 0.9816, 0, 0, 0, 1, 0.23, -0.02, 0)
 
 [node name="Deltoid_R" type="MeshInstance3D" parent="Rig/Hips/Spine/Chest/Shoulder_R/UpperArm_R"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.035, 0)
@@ -520,7 +528,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.092, 0)
 mesh = SubResource("Mesh_palm")
 
 [node name="Thumb_R" type="Node3D" parent="Rig/Hips/Spine/Chest/Shoulder_R/UpperArm_R/LowerArm_R/Hand_R"]
-transform = Transform3D(0.7431, -0.6691, 0, 0.6691, 0.7431, 0, 0, 0, 1, -0.018, -0.068, -0.052)
+transform = Transform3D(0.7431, 0.6691, 0, -0.6691, 0.7431, 0, 0, 0, 1, -0.018, -0.068, -0.052)
 
 [node name="ThumbProx_R" type="MeshInstance3D" parent="Rig/Hips/Spine/Chest/Shoulder_R/UpperArm_R/LowerArm_R/Hand_R/Thumb_R"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.035, 0)
@@ -593,7 +601,7 @@ mesh = SubResource("Mesh_phalanx_tip")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 0.35, 0)
 
 [node name="UpperArm_L" type="Node3D" parent="Rig/Hips/Spine/Chest/Shoulder_L"]
-transform = Transform3D(0.9816, -0.1908, 0, 0.1908, 0.9816, 0, 0, 0, 1, -0.23, -0.02, 0)
+transform = Transform3D(0.9816, 0.1908, 0, -0.1908, 0.9816, 0, 0, 0, 1, -0.23, -0.02, 0)
 
 [node name="Deltoid_L" type="MeshInstance3D" parent="Rig/Hips/Spine/Chest/Shoulder_L/UpperArm_L"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.035, 0)
@@ -622,7 +630,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.092, 0)
 mesh = SubResource("Mesh_palm")
 
 [node name="Thumb_L" type="Node3D" parent="Rig/Hips/Spine/Chest/Shoulder_L/UpperArm_L/LowerArm_L/Hand_L"]
-transform = Transform3D(0.7431, 0.6691, 0, -0.6691, 0.7431, 0, 0, 0, 1, 0.018, -0.068, -0.052)
+transform = Transform3D(0.7431, -0.6691, 0, 0.6691, 0.7431, 0, 0, 0, 1, 0.018, -0.068, -0.052)
 
 [node name="ThumbProx_L" type="MeshInstance3D" parent="Rig/Hips/Spine/Chest/Shoulder_L/UpperArm_L/LowerArm_L/Hand_L/Thumb_L"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.035, 0)
@@ -766,7 +774,7 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.088, -0.125)
 mesh = SubResource("Mesh_brow")
 
 [node name="Nose" type="MeshInstance3D" parent="Rig/Hips/Spine/Chest/Neck/Head"]
-transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0, 0.03, -0.12)
+transform = Transform3D(1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 0.03, -0.12)
 mesh = SubResource("Mesh_nose")
 
 [node name="Mouth" type="MeshInstance3D" parent="Rig/Hips/Spine/Chest/Neck/Head"]
@@ -775,7 +783,7 @@ cast_shadow = 0
 mesh = SubResource("Mesh_mouth")
 
 [node name="Scar_L" type="MeshInstance3D" parent="Rig/Hips/Spine/Chest/Neck/Head"]
-transform = Transform3D(0.978, 0.208, 0, -0.208, 0.978, 0, 0, 0, 1, -0.062, 0.062, -0.148)
+transform = Transform3D(0.978, -0.208, 0, 0.208, 0.978, 0, 0, 0, 1, -0.062, 0.062, -0.148)
 cast_shadow = 0
 mesh = SubResource("Mesh_scar")
 
@@ -791,7 +799,7 @@ mesh = SubResource("Mesh_knotband")
 ; the only thing breaking Ironjaw's otherwise smooth head silhouette.
 
 [node name="KnotTail" type="MeshInstance3D" parent="Rig/Hips/Spine/Chest/Neck/Head"]
-transform = Transform3D(1, 0, 0, 0, 0.643, 0.766, 0, -0.766, 0.643, 0, 0.3, 0.105)
+transform = Transform3D(1, 0, 0, 0, 0.643, -0.766, 0, 0.766, 0.643, 0, 0.3, 0.105)
 mesh = SubResource("Mesh_knottail")
 
 [node name="EyeWhite_R" type="MeshInstance3D" parent="Rig/Hips/Spine/Chest/Neck/Head"]

@@ -978,10 +978,10 @@ transform = Transform3D(-0.94, 0, 0.342, 0, 1, 0, -0.342, 0, -0.94, -6.5, 0, 24.
 [node name="Fighters" type="Node3D" parent="."]
 
 [node name="Kestrel" parent="Fighters" instance=ExtResource("26_player")]
-transform = Transform3D(0.2079, 0, 0.9781, 0, 1, 0, -0.9781, 0, 0.2079, -3.6, 0, 0)
+transform = Transform3D(0.2079, 0, -0.9781, 0, 1, 0, 0.9781, 0, 0.2079, -3.6, 0, 0)
 
 [node name="Ironjaw" parent="Fighters" instance=ExtResource("27_cpu")]
-transform = Transform3D(0.2079, 0, -0.9781, 0, 1, 0, 0.9781, 0, 0.2079, 3.6, 0, 0)
+transform = Transform3D(0.2079, 0, 0.9781, 0, 1, 0, -0.9781, 0, 0.2079, 3.6, 0, 0)
 
 ; -----------------------------------------------------------------------------
 ;  ATMOSPHERE
