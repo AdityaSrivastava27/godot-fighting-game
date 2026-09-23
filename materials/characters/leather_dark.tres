@@ -1,0 +1,44 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+; Ironjaw's harness, belt, bracer and boots. Darker than his skin so the
+; straps stay legible as straps crossing a bare chest rather than merging
+; into it.
+
+[sub_resource type="FastNoiseLite" id="Noise_hide"]
+noise_type = 3
+seed = 71
+frequency = 1.9
+fractal_octaves = 3
+
+[sub_resource type="Gradient" id="Ramp_hide"]
+offsets = PackedFloat32Array(0, 1)
+colors = PackedColorArray(0.76, 0.76, 0.76, 1, 1, 1, 1, 1)
+
+[sub_resource type="NoiseTexture2D" id="Tex_hide"]
+width = 128
+height = 128
+seamless = true
+color_ramp = SubResource("Ramp_hide")
+noise = SubResource("Noise_hide")
+
+[sub_resource type="NoiseTexture2D" id="Tex_hide_n"]
+width = 128
+height = 128
+seamless = true
+as_normal_map = true
+bump_strength = 1.5
+noise = SubResource("Noise_hide")
+
+[resource]
+resource_name = "LeatherDark"
+albedo_color = Color(0.145, 0.102, 0.078, 1)
+albedo_texture = SubResource("Tex_hide")
+metallic = 0.0
+metallic_specular = 0.34
+roughness = 0.66
+normal_enabled = true
+normal_scale = 0.5
+normal_texture = SubResource("Tex_hide_n")
+uv1_scale = Vector3(1.6, 1.6, 1.6)
+uv1_triplanar = true
+uv1_world_triplanar = false

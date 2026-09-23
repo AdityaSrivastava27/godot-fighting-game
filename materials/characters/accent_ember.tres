@@ -1,0 +1,15 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+; Ironjaw's team accent: the scar across his left eye, the pauldron edging
+; and the boot welts. Hotter and brighter than accent_cyan because it has to
+; carry against his much darker skin.
+
+[resource]
+resource_name = "AccentEmber"
+albedo_color = Color(0.86, 0.315, 0.075, 1)
+metallic = 0.0
+metallic_specular = 0.4
+roughness = 0.5
+emission_enabled = true
+emission = Color(1, 0.4, 0.1, 1)
+emission_energy_multiplier = 0.55

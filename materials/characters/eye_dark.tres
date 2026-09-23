@@ -1,0 +1,10 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+; Iris/pupil and the mouth line, shared by both fighters.
+
+[resource]
+resource_name = "EyeDark"
+albedo_color = Color(0.045, 0.038, 0.034, 1)
+metallic = 0.0
+metallic_specular = 0.55
+roughness = 0.2

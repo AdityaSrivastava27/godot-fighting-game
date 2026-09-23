@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+; Ironjaw's topknot and beard. Dried-blood crimson, matched in hue to his
+; trousers so the head and the legs bracket the bare torso.
+
+[resource]
+resource_name = "HairCpu"
+albedo_color = Color(0.285, 0.062, 0.05, 1)
+metallic = 0.0
+metallic_specular = 0.3
+roughness = 0.68

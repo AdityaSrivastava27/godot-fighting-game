@@ -7,6 +7,7 @@
 ;    +X / -X .. the fight axis. Playable range is X = -13 .. +13.
 ;    Z = 0 ..... the fight plane. Fighters stand here; the camera looks up +Z.
 ;    Y = 0 ..... the walking surface of the platform.
+;    Marks .... Kestrel (player) stands at X = -3.6, Ironjaw (CPU) at X = +3.6.
 ;
 ;  Readability contract (this is what keeps two fighters legible):
 ;    - Platform is mid-value and desaturated; everything behind it is dark.
@@ -43,6 +44,8 @@
 [ext_resource type="PackedScene" path="res://scenes/props/crate.tscn" id="21_crate"]
 [ext_resource type="PackedScene" path="res://scenes/props/barrel.tscn" id="22_barrel"]
 [ext_resource type="PackedScene" path="res://scenes/props/rubble.tscn" id="23_rubble"]
+[ext_resource type="PackedScene" path="res://scenes/characters/fighter_player.tscn" id="26_player"]
+[ext_resource type="PackedScene" path="res://scenes/characters/fighter_cpu.tscn" id="27_cpu"]
 
 ; Two shared primitives do nearly all the work. Every block below is the same
 ; unit cube or unit cylinder scaled by its node transform, and the stone
@@ -171,6 +174,35 @@ light_specular = 0.2
 shadow_enabled = false
 omni_range = 36.0
 omni_attenuation = 1.4
+
+; Two character fills, one per fighter mark, and the only lights in the arena
+; that exist for the fighters rather than for the set. Kept deliberately
+; small - short range, no shadows, low energy - so they lift the camera-side
+; of a body out of the dark without flattening the key light or laying a
+; visible pool on the floor. Tinted per team, cool on Kestrel and warm on
+; Ironjaw, which reinforces the colour read for free.
+;
+; They live here rather than inside the fighter scenes on purpose: they are
+; stage lighting and must stay camera-side, so they must not yaw when a
+; fighter eventually turns around.
+
+[node name="FighterFillLeft" type="OmniLight3D" parent="Lighting"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4.3, 1.7, -2.4)
+light_color = Color(0.72, 0.84, 1, 1)
+light_energy = 0.55
+light_specular = 0.35
+shadow_enabled = false
+omni_range = 3.2
+omni_attenuation = 2.0
+
+[node name="FighterFillRight" type="OmniLight3D" parent="Lighting"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4.3, 1.85, -2.4)
+light_color = Color(1, 0.72, 0.5, 1)
+light_energy = 0.6
+light_specular = 0.35
+shadow_enabled = false
+omni_range = 3.2
+omni_attenuation = 2.0
 
 ; -----------------------------------------------------------------------------
 ;  CAMERAS
@@ -926,6 +958,30 @@ transform = Transform3D(-0.5, 0, -0.866, 0, 1, 0, 0.866, 0, -0.5, 18.5, 0, 23.4)
 
 [node name="RubbleC" parent="Props/Clutter" instance=ExtResource("23_rubble")]
 transform = Transform3D(-0.94, 0, 0.342, 0, 1, 0, -0.342, 0, -0.94, -6.5, 0, 24.6)
+
+; -----------------------------------------------------------------------------
+;  FIGHTERS
+;  Kestrel (player) on -X, Ironjaw (CPU) on +X, 7.2 units apart with the floor
+;  medallion centred between them. That is a little under three body-heights,
+;  the usual fighting-game round-start gap, and it sits inside CloseCamera's
+;  ~14-unit-wide frame with margin at both ends.
+;
+;  Each is yawed 78 degrees rather than a flat 90. They still square up along
+;  the fight axis, but the 12-degree cheat rolls both faces far enough toward
+;  the camera to catch the brow, nose and eyes. In exact profile a face reads
+;  as a blank edge and every bit of head detail is wasted.
+;
+;  Both stand at y = 0 on the walking surface, well inside the X = +/-13
+;  ring-out lines. Geometry only - neither has a script, a body or a shape.
+; -----------------------------------------------------------------------------
+
+[node name="Fighters" type="Node3D" parent="."]
+
+[node name="Kestrel" parent="Fighters" instance=ExtResource("26_player")]
+transform = Transform3D(0.2079, 0, 0.9781, 0, 1, 0, -0.9781, 0, 0.2079, -3.6, 0, 0)
+
+[node name="Ironjaw" parent="Fighters" instance=ExtResource("27_cpu")]
+transform = Transform3D(0.2079, 0, -0.9781, 0, 1, 0, 0.9781, 0, 0.2079, 3.6, 0, 0)
 
 ; -----------------------------------------------------------------------------
 ;  ATMOSPHERE

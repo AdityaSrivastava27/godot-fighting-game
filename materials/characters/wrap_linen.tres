@@ -1,0 +1,32 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+; Hand, shin and foot wrapping. The brightest value on either fighter - it
+; deliberately lands on the hands and feet, which is exactly where the eye
+; needs to go once strikes are animated.
+
+[sub_resource type="FastNoiseLite" id="Noise_linen"]
+noise_type = 3
+seed = 58
+frequency = 2.4
+fractal_octaves = 2
+
+[sub_resource type="Gradient" id="Ramp_linen"]
+offsets = PackedFloat32Array(0, 1)
+colors = PackedColorArray(0.8, 0.8, 0.8, 1, 1, 1, 1, 1)
+
+[sub_resource type="NoiseTexture2D" id="Tex_linen"]
+width = 128
+height = 128
+seamless = true
+color_ramp = SubResource("Ramp_linen")
+noise = SubResource("Noise_linen")
+
+[resource]
+resource_name = "WrapLinen"
+albedo_color = Color(0.72, 0.695, 0.615, 1)
+albedo_texture = SubResource("Tex_linen")
+metallic = 0.0
+roughness = 0.94
+uv1_scale = Vector3(2.6, 2.6, 2.6)
+uv1_triplanar = true
+uv1_world_triplanar = false

@@ -1,0 +1,38 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+; Kestrel's skin. Warm mid-tan, kept a clear step brighter than the arena's
+; stone (albedo ~0.27) so bare arms and shoulders hold their shape against the
+; background instead of sinking into it.
+;
+; Triplanar is LOCAL, not world. World triplanar is right for the static
+; masonry, but on a character it would make the texture swim across the body
+; the moment a limb moves - so every character material sets
+; uv1_world_triplanar = false.
+
+[sub_resource type="FastNoiseLite" id="Noise_skin"]
+noise_type = 3
+seed = 91
+frequency = 0.9
+fractal_octaves = 3
+
+[sub_resource type="Gradient" id="Ramp_skin"]
+offsets = PackedFloat32Array(0, 1)
+colors = PackedColorArray(0.9, 0.9, 0.9, 1, 1, 1, 1, 1)
+
+[sub_resource type="NoiseTexture2D" id="Tex_skin"]
+width = 128
+height = 128
+seamless = true
+color_ramp = SubResource("Ramp_skin")
+noise = SubResource("Noise_skin")
+
+[resource]
+resource_name = "SkinPlayer"
+albedo_color = Color(0.63, 0.46, 0.355, 1)
+albedo_texture = SubResource("Tex_skin")
+metallic = 0.0
+metallic_specular = 0.28
+roughness = 0.72
+uv1_scale = Vector3(1.4, 1.4, 1.4)
+uv1_triplanar = true
+uv1_world_triplanar = false

@@ -1,0 +1,48 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+; Ironjaw's skin. Deep warm brown-grey - roughly half the value of Kestrel's
+; tan, which is the single biggest reason the two fighters never get confused
+; at a glance even when both are in silhouette.
+;
+; Lower roughness than the player: this one reads as sweat-sheened, and the
+; specular pop is what keeps the darker skin from going muddy under the
+; stage spots.
+
+[sub_resource type="FastNoiseLite" id="Noise_skin"]
+noise_type = 3
+seed = 23
+frequency = 0.8
+fractal_octaves = 3
+
+[sub_resource type="Gradient" id="Ramp_skin"]
+offsets = PackedFloat32Array(0, 1)
+colors = PackedColorArray(0.86, 0.86, 0.86, 1, 1, 1, 1, 1)
+
+[sub_resource type="NoiseTexture2D" id="Tex_skin"]
+width = 128
+height = 128
+seamless = true
+color_ramp = SubResource("Ramp_skin")
+noise = SubResource("Noise_skin")
+
+[sub_resource type="NoiseTexture2D" id="Tex_skin_n"]
+width = 128
+height = 128
+seamless = true
+as_normal_map = true
+bump_strength = 0.9
+noise = SubResource("Noise_skin")
+
+[resource]
+resource_name = "SkinCpu"
+albedo_color = Color(0.44, 0.325, 0.275, 1)
+albedo_texture = SubResource("Tex_skin")
+metallic = 0.0
+metallic_specular = 0.42
+roughness = 0.58
+normal_enabled = true
+normal_scale = 0.35
+normal_texture = SubResource("Tex_skin_n")
+uv1_scale = Vector3(1.2, 1.2, 1.2)
+uv1_triplanar = true
+uv1_world_triplanar = false

@@ -1,0 +1,14 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+; Pauldron, gauntlet plates, boot caps and belt buckle.
+;
+; Held cooler and lighter than the arena's bronze_trim (0.3, 0.215, 0.115) on
+; purpose - the stage rim is warm bronze, so making the armour cold steel
+; stops the fighter's metal from reading as more stage furniture.
+
+[resource]
+resource_name = "ArmorIron"
+albedo_color = Color(0.305, 0.32, 0.355, 1)
+metallic = 0.85
+metallic_specular = 0.55
+roughness = 0.36

@@ -1,0 +1,11 @@
+[gd_resource type="StandardMaterial3D" format=3]
+
+; Sclera, shared by both fighters. Low roughness - at this scale the eye only
+; reads because it catches a specular dot.
+
+[resource]
+resource_name = "EyeWhite"
+albedo_color = Color(0.82, 0.81, 0.785, 1)
+metallic = 0.0
+metallic_specular = 0.6
+roughness = 0.22
