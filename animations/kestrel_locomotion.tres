@@ -1,0 +1,1168 @@
+[gd_resource type="AnimationLibrary" load_steps=6 format=3]
+
+; =============================================================================
+;  KESTREL - locomotion clips
+; =============================================================================
+;  Five looping clips behind the movement in scripts/player_movement.gd. They
+;  are consumed through the BlendSpace2D on fighter_player.tscn's AnimationTree
+;  and are never played by name, so each one has to be loopable AND has to open
+;  and close on the same pose - a blend can cut in at any phase.
+;
+;  UNITS. Node3D:rotation value tracks are RADIANS. Everything below was
+;  authored in degrees and converted; the degree figures are the ones quoted in
+;  the comments. Hips:position is in arena units (1 unit ~ 0.68 m).
+;
+;  THE SHARED STANCE. All five clips are the same orthodox fighting stance with
+;  a different motion laid over it: left foot lead, hips bladed -10 degrees,
+;  rear (right) foot up on the ball, both fists at guard. Blending any two of
+;  them is therefore blending two variations of one pose rather than two
+;  unrelated poses, and that is what keeps every point in between readable.
+;
+;  GROUND CONTACT. A foot's pitch is the SUM of its thigh, knee and ankle x
+;  angles - the rig has no IK, so that sum is the only thing holding a sole on
+;  the floor. The sole sits 0.10 below the ankle, and straight-legged the hips
+;  ride at 1.35 and the sole lands exactly at y = 0. The stance bends the lead
+;  knee 34 degrees, shortening the chain by 0.054, so the stance hips drop to
+;  1.296. Every planted foot in every key below was placed against that
+;  arithmetic and lands within a centimetre of the floor. Change a knee and you
+;  must change its ankle and the hips with it, or the fighter skates.
+;
+;  ROOT MOTION. None, by design. Translation belongs to player_movement.gd,
+;  which integrates it and clamps it against the ring-out lines. These clips
+;  only ever move the Hips WITHIN the rig - the lateral lean of a hop, the rise
+;  and fall of a step - and every one of those offsets returns to zero by the
+;  end of the loop, so nothing accumulates.
+;
+;  CUBIC INTERPOLATION (interp = 2) throughout. Four or five keys carrying a
+;  smooth curve read better than the dozen a linear track would need, and they
+;  keep this file small enough to edit by hand.
+;
+;  There is no RESET clip: the bind pose already lives in fighter_player.tscn
+;  and the tree is only ever active at runtime.
+; =============================================================================
+
+; ---------------------------------------------------------------------------
+;  IDLE  -  2.6s loop
+;  Fighting stance at rest. It sits at the centre of the blend space, so
+;  it is what plays whenever the fighter is not moving.
+; ---------------------------------------------------------------------------
+[sub_resource type="Animation" id="Anim_idle"]
+resource_name = "idle"
+length = 2.6
+loop_mode = 1
+step = 0.05
+
+; pelvis translation - the only track that moves rather than turns
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Rig/Hips:position")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.65, 1.3, 1.95, 2.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 1.296, 0), Vector3(0.01, 1.29, 0.004), Vector3(0, 1.296, 0), Vector3(-0.01, 1.29, -0.004), Vector3(0, 1.296, 0)]
+}
+
+; pelvis yaw is the stance blade; z is the lateral lean
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Rig/Hips:rotation")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.65, 1.3, 1.95, 2.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0, -0.17453, 0), Vector3(0, -0.20071, -0.01745), Vector3(0, -0.17453, 0), Vector3(0, -0.14835, 0.01745), Vector3(0, -0.17453, 0)]
+}
+
+; forward lean, and the counter-yaw that unwinds the blade
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Rig/Hips/Spine:rotation")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.65, 1.3, 1.95, 2.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.08727, 0.08727, 0), Vector3(0.10472, 0.06981, 0), Vector3(0.08727, 0.08727, 0), Vector3(0.10472, 0.10472, 0), Vector3(0.08727, 0.08727, 0)]
+}
+
+; shoulders finish squaring up to the opponent
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Rig/Hips/Spine/Chest:rotation")
+tracks/3/interp = 2
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 0.65, 1.3, 1.95, 2.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.06981, 0.10472, 0), Vector3(0.05236, 0.12217, 0), Vector3(0.06981, 0.10472, 0), Vector3(0.05236, 0.08727, 0), Vector3(0.06981, 0.10472, 0)]
+}
+
+; levels the gaze against the chest lean
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("Rig/Hips/Spine/Chest/Neck:rotation")
+tracks/4/interp = 2
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0, 0.65, 1.3, 1.95, 2.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.13963, -0.01745, 0), Vector3(-0.12217, -0.03491, 0), Vector3(-0.13963, -0.01745, 0), Vector3(-0.12217, 0, 0), Vector3(-0.13963, -0.01745, 0)]
+}
+
+; LEAD thigh - the left foot is forward in this stance
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("Rig/Hips/UpperLeg_L:rotation")
+tracks/5/interp = 2
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0, 0.65, 1.3, 1.95, 2.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.34907, 0.17453, -0.08727), Vector3(0.34907, 0.17453, -0.08727), Vector3(0.34907, 0.17453, -0.08727), Vector3(0.34907, 0.17453, -0.08727), Vector3(0.34907, 0.17453, -0.08727)]
+}
+
+; lead knee (negative = flexed)
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("Rig/Hips/UpperLeg_L/LowerLeg_L:rotation")
+tracks/6/interp = 2
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(0, 0.65, 1.3, 1.95, 2.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.59341, 0, 0), Vector3(-0.62832, 0, 0), Vector3(-0.59341, 0, 0), Vector3(-0.62832, 0, 0), Vector3(-0.59341, 0, 0)]
+}
+
+; lead ankle - the three x angles sum to the sole's pitch
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("Rig/Hips/UpperLeg_L/LowerLeg_L/Foot_L:rotation")
+tracks/7/interp = 2
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(0, 0.65, 1.3, 1.95, 2.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.24435, 0, 0), Vector3(0.27925, 0, 0), Vector3(0.24435, 0, 0), Vector3(0.27925, 0, 0), Vector3(0.24435, 0, 0)]
+}
+
+; REAR thigh, turned out 36 degrees
+tracks/8/type = "value"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("Rig/Hips/UpperLeg_R:rotation")
+tracks/8/interp = 2
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"times": PackedFloat32Array(0, 0.65, 1.3, 1.95, 2.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.27925, 0.62832, 0.10472), Vector3(-0.27925, 0.62832, 0.10472), Vector3(-0.27925, 0.62832, 0.10472), Vector3(-0.27925, 0.62832, 0.10472), Vector3(-0.27925, 0.62832, 0.10472)]
+}
+
+; rear knee
+tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("Rig/Hips/UpperLeg_R/LowerLeg_R:rotation")
+tracks/9/interp = 2
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"times": PackedFloat32Array(0, 0.65, 1.3, 1.95, 2.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.31416, 0, 0), Vector3(-0.34907, 0, 0), Vector3(-0.31416, 0, 0), Vector3(-0.34907, 0, 0), Vector3(-0.31416, 0, 0)]
+}
+
+; rear ankle - stance total is -22, i.e. up on the ball
+tracks/10/type = "value"
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/path = NodePath("Rig/Hips/UpperLeg_R/LowerLeg_R/Foot_R:rotation")
+tracks/10/interp = 2
+tracks/10/loop_wrap = true
+tracks/10/keys = {
+"times": PackedFloat32Array(0, 0.65, 1.3, 1.95, 2.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.20944, 0, 0), Vector3(0.24435, 0, 0), Vector3(0.20944, 0, 0), Vector3(0.24435, 0, 0), Vector3(0.20944, 0, 0)]
+}
+
+; lead guard arm
+tracks/11/type = "value"
+tracks/11/imported = false
+tracks/11/enabled = true
+tracks/11/path = NodePath("Rig/Hips/Spine/Chest/Shoulder_L/UpperArm_L:rotation")
+tracks/11/interp = 2
+tracks/11/loop_wrap = true
+tracks/11/keys = {
+"times": PackedFloat32Array(0, 0.65, 1.3, 1.95, 2.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.5236, -0.27925, -0.13963), Vector3(0.54105, -0.27925, -0.13963), Vector3(0.5236, -0.27925, -0.13963), Vector3(0.50615, -0.27925, -0.13963), Vector3(0.5236, -0.27925, -0.13963)]
+}
+
+; lead elbow
+tracks/12/type = "value"
+tracks/12/imported = false
+tracks/12/enabled = true
+tracks/12/path = NodePath("Rig/Hips/Spine/Chest/Shoulder_L/UpperArm_L/LowerArm_L:rotation")
+tracks/12/interp = 2
+tracks/12/loop_wrap = true
+tracks/12/keys = {
+"times": PackedFloat32Array(0, 0.65, 1.3, 1.95, 2.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(1.25664, 0, 0), Vector3(1.29154, 0, 0), Vector3(1.25664, 0, 0), Vector3(1.22173, 0, 0), Vector3(1.25664, 0, 0)]
+}
+
+; rear guard arm, tucked to the ribs
+tracks/13/type = "value"
+tracks/13/imported = false
+tracks/13/enabled = true
+tracks/13/path = NodePath("Rig/Hips/Spine/Chest/Shoulder_R/UpperArm_R:rotation")
+tracks/13/interp = 2
+tracks/13/loop_wrap = true
+tracks/13/keys = {
+"times": PackedFloat32Array(0, 0.65, 1.3, 1.95, 2.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.31416, 0.24435, 0.10472), Vector3(0.33161, 0.24435, 0.10472), Vector3(0.31416, 0.24435, 0.10472), Vector3(0.29671, 0.24435, 0.10472), Vector3(0.31416, 0.24435, 0.10472)]
+}
+
+; rear elbow - fist at the cheek
+tracks/14/type = "value"
+tracks/14/imported = false
+tracks/14/enabled = true
+tracks/14/path = NodePath("Rig/Hips/Spine/Chest/Shoulder_R/UpperArm_R/LowerArm_R:rotation")
+tracks/14/interp = 2
+tracks/14/loop_wrap = true
+tracks/14/keys = {
+"times": PackedFloat32Array(0, 0.65, 1.3, 1.95, 2.6),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(1.67552, 0, 0), Vector3(1.71042, 0, 0), Vector3(1.67552, 0, 0), Vector3(1.64061, 0, 0), Vector3(1.67552, 0, 0)]
+}
+
+
+; ---------------------------------------------------------------------------
+;  WALK_FORWARD  -  0.72s loop
+;  Advance toward the opponent. The lead foot reaches, the rear gathers
+;  after it - a stance shuffle, so the feet never cross and the guard never
+;  drops.
+; ---------------------------------------------------------------------------
+[sub_resource type="Animation" id="Anim_walk_forward"]
+resource_name = "walk_forward"
+length = 0.72
+loop_mode = 1
+step = 0.05
+
+; pelvis translation - the only track that moves rather than turns
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Rig/Hips:position")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.24, 0.48, 0.72),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 1.296, 0), Vector3(-0.008, 1.302, -0.015), Vector3(0.008, 1.3, 0.01), Vector3(0, 1.296, 0)]
+}
+
+; pelvis yaw is the stance blade; z is the lateral lean
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Rig/Hips:rotation")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.24, 0.48, 0.72),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0, -0.17453, 0), Vector3(0, -0.13963, -0.01745), Vector3(0, -0.20944, 0.01745), Vector3(0, -0.17453, 0)]
+}
+
+; forward lean, and the counter-yaw that unwinds the blade
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Rig/Hips/Spine:rotation")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.24, 0.48, 0.72),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.08727, 0.08727, 0), Vector3(0.12217, 0.06981, 0), Vector3(0.10472, 0.10472, 0), Vector3(0.08727, 0.08727, 0)]
+}
+
+; shoulders finish squaring up to the opponent
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Rig/Hips/Spine/Chest:rotation")
+tracks/3/interp = 2
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 0.24, 0.48, 0.72),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.06981, 0.10472, 0), Vector3(0.05236, 0.12217, 0), Vector3(0.06981, 0.08727, 0), Vector3(0.06981, 0.10472, 0)]
+}
+
+; levels the gaze against the chest lean
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("Rig/Hips/Spine/Chest/Neck:rotation")
+tracks/4/interp = 2
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0, 0.24, 0.48, 0.72),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.13963, -0.01745, 0), Vector3(-0.15708, -0.01745, 0), Vector3(-0.13963, -0.01745, 0), Vector3(-0.13963, -0.01745, 0)]
+}
+
+; LEAD thigh - the left foot is forward in this stance
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("Rig/Hips/UpperLeg_L:rotation")
+tracks/5/interp = 2
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0, 0.24, 0.48, 0.72),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.34907, 0.17453, -0.08727), Vector3(0.55851, 0.17453, -0.08727), Vector3(0.38397, 0.17453, -0.08727), Vector3(0.34907, 0.17453, -0.08727)]
+}
+
+; lead knee (negative = flexed)
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("Rig/Hips/UpperLeg_L/LowerLeg_L:rotation")
+tracks/6/interp = 2
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(0, 0.24, 0.48, 0.72),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.59341, 0, 0), Vector3(-0.41888, 0, 0), Vector3(-0.55851, 0, 0), Vector3(-0.59341, 0, 0)]
+}
+
+; lead ankle - the three x angles sum to the sole's pitch
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("Rig/Hips/UpperLeg_L/LowerLeg_L/Foot_L:rotation")
+tracks/7/interp = 2
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(0, 0.24, 0.48, 0.72),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.24435, 0, 0), Vector3(0.10472, 0, 0), Vector3(0.20944, 0, 0), Vector3(0.24435, 0, 0)]
+}
+
+; REAR thigh, turned out 36 degrees
+tracks/8/type = "value"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("Rig/Hips/UpperLeg_R:rotation")
+tracks/8/interp = 2
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"times": PackedFloat32Array(0, 0.24, 0.48, 0.72),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.27925, 0.62832, 0.10472), Vector3(-0.31416, 0.62832, 0.10472), Vector3(-0.06981, 0.59341, 0.12217), Vector3(-0.27925, 0.62832, 0.10472)]
+}
+
+; rear knee
+tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("Rig/Hips/UpperLeg_R/LowerLeg_R:rotation")
+tracks/9/interp = 2
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"times": PackedFloat32Array(0, 0.24, 0.48, 0.72),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.31416, 0, 0), Vector3(-0.24435, 0, 0), Vector3(-0.69813, 0, 0), Vector3(-0.31416, 0, 0)]
+}
+
+; rear ankle - stance total is -22, i.e. up on the ball
+tracks/10/type = "value"
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/path = NodePath("Rig/Hips/UpperLeg_R/LowerLeg_R/Foot_R:rotation")
+tracks/10/interp = 2
+tracks/10/loop_wrap = true
+tracks/10/keys = {
+"times": PackedFloat32Array(0, 0.24, 0.48, 0.72),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.20944, 0, 0), Vector3(0.17453, 0, 0), Vector3(0.5236, 0, 0), Vector3(0.20944, 0, 0)]
+}
+
+; lead guard arm
+tracks/11/type = "value"
+tracks/11/imported = false
+tracks/11/enabled = true
+tracks/11/path = NodePath("Rig/Hips/Spine/Chest/Shoulder_L/UpperArm_L:rotation")
+tracks/11/interp = 2
+tracks/11/loop_wrap = true
+tracks/11/keys = {
+"times": PackedFloat32Array(0, 0.24, 0.48, 0.72),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.5236, -0.27925, -0.13963), Vector3(0.48869, -0.27925, -0.13963), Vector3(0.55851, -0.27925, -0.13963), Vector3(0.5236, -0.27925, -0.13963)]
+}
+
+; lead elbow
+tracks/12/type = "value"
+tracks/12/imported = false
+tracks/12/enabled = true
+tracks/12/path = NodePath("Rig/Hips/Spine/Chest/Shoulder_L/UpperArm_L/LowerArm_L:rotation")
+tracks/12/interp = 2
+tracks/12/loop_wrap = true
+tracks/12/keys = {
+"times": PackedFloat32Array(0, 0.24, 0.48, 0.72),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(1.25664, 0, 0), Vector3(1.22173, 0, 0), Vector3(1.29154, 0, 0), Vector3(1.25664, 0, 0)]
+}
+
+; rear guard arm, tucked to the ribs
+tracks/13/type = "value"
+tracks/13/imported = false
+tracks/13/enabled = true
+tracks/13/path = NodePath("Rig/Hips/Spine/Chest/Shoulder_R/UpperArm_R:rotation")
+tracks/13/interp = 2
+tracks/13/loop_wrap = true
+tracks/13/keys = {
+"times": PackedFloat32Array(0, 0.24, 0.48, 0.72),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.31416, 0.24435, 0.10472), Vector3(0.34907, 0.24435, 0.10472), Vector3(0.27925, 0.24435, 0.10472), Vector3(0.31416, 0.24435, 0.10472)]
+}
+
+; rear elbow - fist at the cheek
+tracks/14/type = "value"
+tracks/14/imported = false
+tracks/14/enabled = true
+tracks/14/path = NodePath("Rig/Hips/Spine/Chest/Shoulder_R/UpperArm_R/LowerArm_R:rotation")
+tracks/14/interp = 2
+tracks/14/loop_wrap = true
+tracks/14/keys = {
+"times": PackedFloat32Array(0, 0.24, 0.48, 0.72),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(1.67552, 0, 0), Vector3(1.71042, 0, 0), Vector3(1.64061, 0, 0), Vector3(1.67552, 0, 0)]
+}
+
+
+; ---------------------------------------------------------------------------
+;  WALK_BACK  -  0.8s loop
+;  Retreat. Longer than the advance to match backward_speed being the
+;  slower of the two. The rear foot reaches back first and the lead is pulled
+;  after it.
+; ---------------------------------------------------------------------------
+[sub_resource type="Animation" id="Anim_walk_back"]
+resource_name = "walk_back"
+length = 0.8
+loop_mode = 1
+step = 0.05
+
+; pelvis translation - the only track that moves rather than turns
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Rig/Hips:position")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.27, 0.53, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 1.296, 0), Vector3(0.008, 1.296, 0.014), Vector3(-0.006, 1.29, 0.006), Vector3(0, 1.296, 0)]
+}
+
+; pelvis yaw is the stance blade; z is the lateral lean
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Rig/Hips:rotation")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.27, 0.53, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0, -0.17453, 0), Vector3(0, -0.20944, 0.01745), Vector3(0, -0.13963, -0.01745), Vector3(0, -0.17453, 0)]
+}
+
+; forward lean, and the counter-yaw that unwinds the blade
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Rig/Hips/Spine:rotation")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.27, 0.53, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.08727, 0.08727, 0), Vector3(0.05236, 0.10472, 0), Vector3(0.06981, 0.06981, 0), Vector3(0.08727, 0.08727, 0)]
+}
+
+; shoulders finish squaring up to the opponent
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Rig/Hips/Spine/Chest:rotation")
+tracks/3/interp = 2
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 0.27, 0.53, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.06981, 0.10472, 0), Vector3(0.08727, 0.08727, 0), Vector3(0.06981, 0.12217, 0), Vector3(0.06981, 0.10472, 0)]
+}
+
+; levels the gaze against the chest lean
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("Rig/Hips/Spine/Chest/Neck:rotation")
+tracks/4/interp = 2
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0, 0.27, 0.53, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.13963, -0.01745, 0), Vector3(-0.10472, 0, 0), Vector3(-0.12217, -0.03491, 0), Vector3(-0.13963, -0.01745, 0)]
+}
+
+; LEAD thigh - the left foot is forward in this stance
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("Rig/Hips/UpperLeg_L:rotation")
+tracks/5/interp = 2
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0, 0.27, 0.53, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.34907, 0.17453, -0.08727), Vector3(0.41888, 0.17453, -0.08727), Vector3(0.10472, 0.20944, -0.08727), Vector3(0.34907, 0.17453, -0.08727)]
+}
+
+; lead knee (negative = flexed)
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("Rig/Hips/UpperLeg_L/LowerLeg_L:rotation")
+tracks/6/interp = 2
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(0, 0.27, 0.53, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.59341, 0, 0), Vector3(-0.48869, 0, 0), Vector3(-0.80285, 0, 0), Vector3(-0.59341, 0, 0)]
+}
+
+; lead ankle - the three x angles sum to the sole's pitch
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("Rig/Hips/UpperLeg_L/LowerLeg_L/Foot_L:rotation")
+tracks/7/interp = 2
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(0, 0.27, 0.53, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.24435, 0, 0), Vector3(0.06981, 0, 0), Vector3(0.5236, 0, 0), Vector3(0.24435, 0, 0)]
+}
+
+; REAR thigh, turned out 36 degrees
+tracks/8/type = "value"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("Rig/Hips/UpperLeg_R:rotation")
+tracks/8/interp = 2
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"times": PackedFloat32Array(0, 0.27, 0.53, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.27925, 0.62832, 0.10472), Vector3(-0.45379, 0.62832, 0.10472), Vector3(-0.31416, 0.62832, 0.10472), Vector3(-0.27925, 0.62832, 0.10472)]
+}
+
+; rear knee
+tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("Rig/Hips/UpperLeg_R/LowerLeg_R:rotation")
+tracks/9/interp = 2
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"times": PackedFloat32Array(0, 0.27, 0.53, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.31416, 0, 0), Vector3(-0.10472, 0, 0), Vector3(-0.24435, 0, 0), Vector3(-0.31416, 0, 0)]
+}
+
+; rear ankle - stance total is -22, i.e. up on the ball
+tracks/10/type = "value"
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/path = NodePath("Rig/Hips/UpperLeg_R/LowerLeg_R/Foot_R:rotation")
+tracks/10/interp = 2
+tracks/10/loop_wrap = true
+tracks/10/keys = {
+"times": PackedFloat32Array(0, 0.27, 0.53, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.20944, 0, 0), Vector3(0.20944, 0, 0), Vector3(0.17453, 0, 0), Vector3(0.20944, 0, 0)]
+}
+
+; lead guard arm
+tracks/11/type = "value"
+tracks/11/imported = false
+tracks/11/enabled = true
+tracks/11/path = NodePath("Rig/Hips/Spine/Chest/Shoulder_L/UpperArm_L:rotation")
+tracks/11/interp = 2
+tracks/11/loop_wrap = true
+tracks/11/keys = {
+"times": PackedFloat32Array(0, 0.27, 0.53, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.5236, -0.27925, -0.13963), Vector3(0.55851, -0.27925, -0.13963), Vector3(0.50615, -0.27925, -0.13963), Vector3(0.5236, -0.27925, -0.13963)]
+}
+
+; lead elbow
+tracks/12/type = "value"
+tracks/12/imported = false
+tracks/12/enabled = true
+tracks/12/path = NodePath("Rig/Hips/Spine/Chest/Shoulder_L/UpperArm_L/LowerArm_L:rotation")
+tracks/12/interp = 2
+tracks/12/loop_wrap = true
+tracks/12/keys = {
+"times": PackedFloat32Array(0, 0.27, 0.53, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(1.25664, 0, 0), Vector3(1.309, 0, 0), Vector3(1.22173, 0, 0), Vector3(1.25664, 0, 0)]
+}
+
+; rear guard arm, tucked to the ribs
+tracks/13/type = "value"
+tracks/13/imported = false
+tracks/13/enabled = true
+tracks/13/path = NodePath("Rig/Hips/Spine/Chest/Shoulder_R/UpperArm_R:rotation")
+tracks/13/interp = 2
+tracks/13/loop_wrap = true
+tracks/13/keys = {
+"times": PackedFloat32Array(0, 0.27, 0.53, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.31416, 0.24435, 0.10472), Vector3(0.29671, 0.24435, 0.10472), Vector3(0.33161, 0.24435, 0.10472), Vector3(0.31416, 0.24435, 0.10472)]
+}
+
+; rear elbow - fist at the cheek
+tracks/14/type = "value"
+tracks/14/imported = false
+tracks/14/enabled = true
+tracks/14/path = NodePath("Rig/Hips/Spine/Chest/Shoulder_R/UpperArm_R/LowerArm_R:rotation")
+tracks/14/interp = 2
+tracks/14/loop_wrap = true
+tracks/14/keys = {
+"times": PackedFloat32Array(0, 0.27, 0.53, 0.8),
+"transitions": PackedFloat32Array(1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(1.67552, 0, 0), Vector3(1.71042, 0, 0), Vector3(1.64061, 0, 0), Vector3(1.67552, 0, 0)]
+}
+
+
+; ---------------------------------------------------------------------------
+;  HOP_LEFT  -  0.52s loop
+;  Sidestep hop to the fighter's own left (local -X). The rear leg pushes,
+;  the lead leg catches. The stance is NOT mirrored - Kestrel stays orthodox
+;  through both hops.
+; ---------------------------------------------------------------------------
+[sub_resource type="Animation" id="Anim_hop_left"]
+resource_name = "hop_left"
+length = 0.52
+loop_mode = 1
+step = 0.05
+
+; pelvis translation - the only track that moves rather than turns
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Rig/Hips:position")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 1.296, 0), Vector3(-0.03, 1.336, 0), Vector3(-0.05, 1.356, 0), Vector3(-0.02, 1.286, 0), Vector3(0, 1.296, 0)]
+}
+
+; pelvis yaw is the stance blade; z is the lateral lean
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Rig/Hips:rotation")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0, -0.17453, 0), Vector3(0, -0.17453, 0.08727), Vector3(0, -0.17453, 0.12217), Vector3(0, -0.17453, 0.03491), Vector3(0, -0.17453, 0)]
+}
+
+; forward lean, and the counter-yaw that unwinds the blade
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Rig/Hips/Spine:rotation")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.08727, 0.08727, 0), Vector3(0.06981, 0.08727, 0.05236), Vector3(0.08727, 0.08727, 0.06981), Vector3(0.12217, 0.08727, 0.01745), Vector3(0.08727, 0.08727, 0)]
+}
+
+; shoulders finish squaring up to the opponent
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Rig/Hips/Spine/Chest:rotation")
+tracks/3/interp = 2
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.06981, 0.10472, 0), Vector3(0.06981, 0.10472, 0.03491), Vector3(0.05236, 0.10472, 0.05236), Vector3(0.03491, 0.10472, 0.01745), Vector3(0.06981, 0.10472, 0)]
+}
+
+; levels the gaze against the chest lean
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("Rig/Hips/Spine/Chest/Neck:rotation")
+tracks/4/interp = 2
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.13963, -0.01745, 0), Vector3(-0.13963, -0.01745, -0.03491), Vector3(-0.13963, -0.01745, -0.05236), Vector3(-0.12217, -0.01745, -0.01745), Vector3(-0.13963, -0.01745, 0)]
+}
+
+; LEAD thigh - the left foot is forward in this stance
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("Rig/Hips/UpperLeg_L:rotation")
+tracks/5/interp = 2
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.34907, 0.17453, -0.08727), Vector3(0.24435, 0.17453, -0.27925), Vector3(0.17453, 0.17453, -0.34907), Vector3(0.34907, 0.17453, -0.20944), Vector3(0.34907, 0.17453, -0.08727)]
+}
+
+; lead knee (negative = flexed)
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("Rig/Hips/UpperLeg_L/LowerLeg_L:rotation")
+tracks/6/interp = 2
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.59341, 0, 0), Vector3(-0.24435, 0, 0), Vector3(-0.41888, 0, 0), Vector3(-0.66323, 0, 0), Vector3(-0.59341, 0, 0)]
+}
+
+; lead ankle - the three x angles sum to the sole's pitch
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("Rig/Hips/UpperLeg_L/LowerLeg_L/Foot_L:rotation")
+tracks/7/interp = 2
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.24435, 0, 0), Vector3(0, 0, 0), Vector3(0.13963, 0, 0), Vector3(0.31416, 0, 0), Vector3(0.24435, 0, 0)]
+}
+
+; REAR thigh, turned out 36 degrees
+tracks/8/type = "value"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("Rig/Hips/UpperLeg_R:rotation")
+tracks/8/interp = 2
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.27925, 0.62832, 0.10472), Vector3(-0.20944, 0.62832, -0.03491), Vector3(-0.20944, 0.62832, -0.10472), Vector3(-0.34907, 0.62832, 0.03491), Vector3(-0.27925, 0.62832, 0.10472)]
+}
+
+; rear knee
+tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("Rig/Hips/UpperLeg_R/LowerLeg_R:rotation")
+tracks/9/interp = 2
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.31416, 0, 0), Vector3(-0.13963, 0, 0), Vector3(-0.55851, 0, 0), Vector3(-0.5236, 0, 0), Vector3(-0.31416, 0, 0)]
+}
+
+; rear ankle - stance total is -22, i.e. up on the ball
+tracks/10/type = "value"
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/path = NodePath("Rig/Hips/UpperLeg_R/LowerLeg_R/Foot_R:rotation")
+tracks/10/interp = 2
+tracks/10/loop_wrap = true
+tracks/10/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.20944, 0, 0), Vector3(0.24435, 0, 0), Vector3(0.38397, 0, 0), Vector3(0.45379, 0, 0), Vector3(0.20944, 0, 0)]
+}
+
+; lead guard arm
+tracks/11/type = "value"
+tracks/11/imported = false
+tracks/11/enabled = true
+tracks/11/path = NodePath("Rig/Hips/Spine/Chest/Shoulder_L/UpperArm_L:rotation")
+tracks/11/interp = 2
+tracks/11/loop_wrap = true
+tracks/11/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.5236, -0.27925, -0.13963), Vector3(0.38397, -0.27925, -0.06981), Vector3(0.34907, -0.27925, -0.03491), Vector3(0.59341, -0.27925, -0.17453), Vector3(0.5236, -0.27925, -0.13963)]
+}
+
+; lead elbow
+tracks/12/type = "value"
+tracks/12/imported = false
+tracks/12/enabled = true
+tracks/12/path = NodePath("Rig/Hips/Spine/Chest/Shoulder_L/UpperArm_L/LowerArm_L:rotation")
+tracks/12/interp = 2
+tracks/12/loop_wrap = true
+tracks/12/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(1.25664, 0, 0), Vector3(1.18682, 0, 0), Vector3(1.15192, 0, 0), Vector3(1.32645, 0, 0), Vector3(1.25664, 0, 0)]
+}
+
+; rear guard arm, tucked to the ribs
+tracks/13/type = "value"
+tracks/13/imported = false
+tracks/13/enabled = true
+tracks/13/path = NodePath("Rig/Hips/Spine/Chest/Shoulder_R/UpperArm_R:rotation")
+tracks/13/interp = 2
+tracks/13/loop_wrap = true
+tracks/13/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.31416, 0.24435, 0.10472), Vector3(0.45379, 0.24435, 0.20944), Vector3(0.48869, 0.24435, 0.24435), Vector3(0.24435, 0.24435, 0.03491), Vector3(0.31416, 0.24435, 0.10472)]
+}
+
+; rear elbow - fist at the cheek
+tracks/14/type = "value"
+tracks/14/imported = false
+tracks/14/enabled = true
+tracks/14/path = NodePath("Rig/Hips/Spine/Chest/Shoulder_R/UpperArm_R/LowerArm_R:rotation")
+tracks/14/interp = 2
+tracks/14/loop_wrap = true
+tracks/14/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(1.67552, 0, 0), Vector3(1.6057, 0, 0), Vector3(1.5708, 0, 0), Vector3(1.72788, 0, 0), Vector3(1.67552, 0, 0)]
+}
+
+
+; ---------------------------------------------------------------------------
+;  HOP_RIGHT  -  0.52s loop
+;  Sidestep hop to the fighter's own right (local +X). The lead leg pushes,
+;  the rear leg catches - the mirror beat of hop_left over the same stance.
+; ---------------------------------------------------------------------------
+[sub_resource type="Animation" id="Anim_hop_right"]
+resource_name = "hop_right"
+length = 0.52
+loop_mode = 1
+step = 0.05
+
+; pelvis translation - the only track that moves rather than turns
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("Rig/Hips:position")
+tracks/0/interp = 2
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0, 1.296, 0), Vector3(0.03, 1.336, 0), Vector3(0.05, 1.356, 0), Vector3(0.02, 1.286, 0), Vector3(0, 1.296, 0)]
+}
+
+; pelvis yaw is the stance blade; z is the lateral lean
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("Rig/Hips:rotation")
+tracks/1/interp = 2
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0, -0.17453, 0), Vector3(0, -0.17453, -0.08727), Vector3(0, -0.17453, -0.12217), Vector3(0, -0.17453, -0.03491), Vector3(0, -0.17453, 0)]
+}
+
+; forward lean, and the counter-yaw that unwinds the blade
+tracks/2/type = "value"
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/path = NodePath("Rig/Hips/Spine:rotation")
+tracks/2/interp = 2
+tracks/2/loop_wrap = true
+tracks/2/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.08727, 0.08727, 0), Vector3(0.06981, 0.08727, -0.05236), Vector3(0.08727, 0.08727, -0.06981), Vector3(0.12217, 0.08727, -0.01745), Vector3(0.08727, 0.08727, 0)]
+}
+
+; shoulders finish squaring up to the opponent
+tracks/3/type = "value"
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/path = NodePath("Rig/Hips/Spine/Chest:rotation")
+tracks/3/interp = 2
+tracks/3/loop_wrap = true
+tracks/3/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.06981, 0.10472, 0), Vector3(0.06981, 0.10472, -0.03491), Vector3(0.05236, 0.10472, -0.05236), Vector3(0.03491, 0.10472, -0.01745), Vector3(0.06981, 0.10472, 0)]
+}
+
+; levels the gaze against the chest lean
+tracks/4/type = "value"
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/path = NodePath("Rig/Hips/Spine/Chest/Neck:rotation")
+tracks/4/interp = 2
+tracks/4/loop_wrap = true
+tracks/4/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.13963, -0.01745, 0), Vector3(-0.13963, -0.01745, 0.03491), Vector3(-0.13963, -0.01745, 0.05236), Vector3(-0.12217, -0.01745, 0.01745), Vector3(-0.13963, -0.01745, 0)]
+}
+
+; LEAD thigh - the left foot is forward in this stance
+tracks/5/type = "value"
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/path = NodePath("Rig/Hips/UpperLeg_L:rotation")
+tracks/5/interp = 2
+tracks/5/loop_wrap = true
+tracks/5/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.34907, 0.17453, -0.08727), Vector3(0.27925, 0.17453, 0.03491), Vector3(0.24435, 0.17453, 0.10472), Vector3(0.38397, 0.17453, -0.03491), Vector3(0.34907, 0.17453, -0.08727)]
+}
+
+; lead knee (negative = flexed)
+tracks/6/type = "value"
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/path = NodePath("Rig/Hips/UpperLeg_L/LowerLeg_L:rotation")
+tracks/6/interp = 2
+tracks/6/loop_wrap = true
+tracks/6/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.59341, 0, 0), Vector3(-0.34907, 0, 0), Vector3(-0.5236, 0, 0), Vector3(-0.69813, 0, 0), Vector3(-0.59341, 0, 0)]
+}
+
+; lead ankle - the three x angles sum to the sole's pitch
+tracks/7/type = "value"
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/path = NodePath("Rig/Hips/UpperLeg_L/LowerLeg_L/Foot_L:rotation")
+tracks/7/interp = 2
+tracks/7/loop_wrap = true
+tracks/7/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.24435, 0, 0), Vector3(0.03491, 0, 0), Vector3(0.17453, 0, 0), Vector3(0.31416, 0, 0), Vector3(0.24435, 0, 0)]
+}
+
+; REAR thigh, turned out 36 degrees
+tracks/8/type = "value"
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/path = NodePath("Rig/Hips/UpperLeg_R:rotation")
+tracks/8/interp = 2
+tracks/8/loop_wrap = true
+tracks/8/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.27925, 0.62832, 0.10472), Vector3(-0.20944, 0.62832, 0.27925), Vector3(-0.17453, 0.62832, 0.34907), Vector3(-0.24435, 0.62832, 0.20944), Vector3(-0.27925, 0.62832, 0.10472)]
+}
+
+; rear knee
+tracks/9/type = "value"
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/path = NodePath("Rig/Hips/UpperLeg_R/LowerLeg_R:rotation")
+tracks/9/interp = 2
+tracks/9/loop_wrap = true
+tracks/9/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(-0.31416, 0, 0), Vector3(-0.17453, 0, 0), Vector3(-0.38397, 0, 0), Vector3(-0.24435, 0, 0), Vector3(-0.31416, 0, 0)]
+}
+
+; rear ankle - stance total is -22, i.e. up on the ball
+tracks/10/type = "value"
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/path = NodePath("Rig/Hips/UpperLeg_R/LowerLeg_R/Foot_R:rotation")
+tracks/10/interp = 2
+tracks/10/loop_wrap = true
+tracks/10/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.20944, 0, 0), Vector3(0, 0, 0), Vector3(0.10472, 0, 0), Vector3(0.34907, 0, 0), Vector3(0.20944, 0, 0)]
+}
+
+; lead guard arm
+tracks/11/type = "value"
+tracks/11/imported = false
+tracks/11/enabled = true
+tracks/11/path = NodePath("Rig/Hips/Spine/Chest/Shoulder_L/UpperArm_L:rotation")
+tracks/11/interp = 2
+tracks/11/loop_wrap = true
+tracks/11/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.5236, -0.27925, -0.13963), Vector3(0.45379, -0.27925, -0.20944), Vector3(0.41888, -0.27925, -0.24435), Vector3(0.57596, -0.27925, -0.10472), Vector3(0.5236, -0.27925, -0.13963)]
+}
+
+; lead elbow
+tracks/12/type = "value"
+tracks/12/imported = false
+tracks/12/enabled = true
+tracks/12/path = NodePath("Rig/Hips/Spine/Chest/Shoulder_L/UpperArm_L/LowerArm_L:rotation")
+tracks/12/interp = 2
+tracks/12/loop_wrap = true
+tracks/12/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(1.25664, 0, 0), Vector3(1.18682, 0, 0), Vector3(1.15192, 0, 0), Vector3(1.32645, 0, 0), Vector3(1.25664, 0, 0)]
+}
+
+; rear guard arm, tucked to the ribs
+tracks/13/type = "value"
+tracks/13/imported = false
+tracks/13/enabled = true
+tracks/13/path = NodePath("Rig/Hips/Spine/Chest/Shoulder_R/UpperArm_R:rotation")
+tracks/13/interp = 2
+tracks/13/loop_wrap = true
+tracks/13/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(0.31416, 0.24435, 0.10472), Vector3(0.38397, 0.24435, 0.17453), Vector3(0.41888, 0.24435, 0.20944), Vector3(0.2618, 0.24435, 0.06981), Vector3(0.31416, 0.24435, 0.10472)]
+}
+
+; rear elbow - fist at the cheek
+tracks/14/type = "value"
+tracks/14/imported = false
+tracks/14/enabled = true
+tracks/14/path = NodePath("Rig/Hips/Spine/Chest/Shoulder_R/UpperArm_R/LowerArm_R:rotation")
+tracks/14/interp = 2
+tracks/14/loop_wrap = true
+tracks/14/keys = {
+"times": PackedFloat32Array(0, 0.13, 0.26, 0.39, 0.52),
+"transitions": PackedFloat32Array(1, 1, 1, 1, 1),
+"update": 0,
+"values": [Vector3(1.67552, 0, 0), Vector3(1.6057, 0, 0), Vector3(1.5708, 0, 0), Vector3(1.72788, 0, 0), Vector3(1.67552, 0, 0)]
+}
+
+; ---------------------------------------------------------------------------
+;  The library. It is mounted under the empty name on Kestrel's
+;  AnimationPlayer, so these are addressed as "idle", "walk_forward" and
+;  so on, with no library prefix.
+; ---------------------------------------------------------------------------
+[resource]
+_data = {
+"idle": SubResource("Anim_idle"),
+"walk_forward": SubResource("Anim_walk_forward"),
+"walk_back": SubResource("Anim_walk_back"),
+"hop_left": SubResource("Anim_hop_left"),
+"hop_right": SubResource("Anim_hop_right")
+}

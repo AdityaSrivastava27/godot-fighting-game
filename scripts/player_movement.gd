@@ -10,9 +10,20 @@ extends Node3D
 ## line across the floor. That re-aiming is the whole reason the movement
 ## reads as circling instead of strafing.
 ##
-## Movement only. No combat, no attacks, no animation, no jump, no AI. The rig
-## keeps its bind pose; this script translates and yaws the scene root and
-## touches nothing else.
+## Movement only. No combat, no attacks, no jump, no AI. This script translates
+## and yaws the scene root, and hands the fighter's own velocity to the rig's
+## locomotion blend so the legs match the travel.
+##
+## THAT HAND-OFF IS THE WHOLE ANIMATION LAYER. There is no state machine and no
+## transition table. The blend space in fighter_player.tscn holds idle at its
+## origin with walk_forward, walk_back, hop_left and hop_right pinned around
+## it, and every frame this script writes in where the fighter is actually
+## going, measured in the same fight frame the input was resolved in. Changing
+## direction moves that point across the space and the blend follows; releasing
+## the stick lets it coast back to the origin, which is idle. Both read as
+## smooth for the same reason: the point is driven by _velocity, which is
+## already accelerated and decelerated below, so the animation inherits the
+## easing the movement was given rather than needing its own.
 ##
 ## KINEMATIC BY CHOICE. A fighting stage is a flat rectangle with hard edges,
 ## so the position is integrated and then clamped analytically instead of
@@ -65,14 +76,27 @@ extends Node3D
 ## crossing point.
 @export var min_separation: float = 0.9
 
+## The one parameter the locomotion blend space exposes. Its value is a
+## Vector2 of (strafe, advance), each already divided by the speed that axis
+## tops out at, so the clips sit at +/-1 and idle at the origin.
+const BLEND_POSITION := "parameters/blend_position"
+
 var _velocity := Vector3.ZERO
 var _ground_y: float = 0.0
+var _anim_tree: AnimationTree
 
 
 func _ready() -> void:
 	# No jumping, so the walking height is captured once and reasserted every
 	# frame instead of being integrated.
 	_ground_y = global_position.y
+
+	# Looked up rather than exported: the tree is part of the fighter scene
+	# this script is attached to, so there is nothing for the arena to wire up
+	# and nothing to re-wire if the script moves to the other side.
+	_anim_tree = get_node_or_null(^"AnimationTree") as AnimationTree
+	if _anim_tree == null:
+		push_warning("player_movement on '%s' found no AnimationTree - the rig will not animate." % name)
 
 	if opponent == null:
 		push_warning("player_movement on '%s' has no opponent - movement disabled." % name)
@@ -87,6 +111,10 @@ func _physics_process(delta: float) -> void:
 	# different height can never tip the fighter off vertical.
 	var to_opponent := Vector3(target.x - start.x, 0.0, target.z - start.z)
 	if to_opponent.length_squared() < 0.000001:
+		# Standing exactly on the opponent leaves no fight frame to resolve
+		# the stick or the blend in. Fall back to idle rather than holding
+		# whatever pose the last good frame left behind.
+		_set_blend(Vector2.ZERO)
 		return
 
 	var forward := to_opponent.normalized()
@@ -120,6 +148,12 @@ func _physics_process(delta: float) -> void:
 	# that never moves, and the fighter would fire off the instant the
 	# constraint lifted.
 	_velocity = (pos - start) / delta
+
+	# Drive the blend from the velocity the constraints left, not the one that
+	# was asked for. Walked into a wall or into the opponent's personal space,
+	# the fighter stops travelling and so does the animation - it settles into
+	# idle against the obstacle instead of running on the spot.
+	_set_blend(Vector2(_velocity.dot(right) / strafe_speed, _project_advance(_velocity.dot(forward))))
 
 	# Aim from where the fighter ended up, not from where it started.
 	var aim := Vector3(target.x - pos.x, 0.0, target.z - pos.z)
@@ -156,3 +190,31 @@ func _resolve_separation(pos: Vector3, target: Vector3) -> Vector3:
 	var push := offset / distance if distance > 0.0001 else Vector2(-1.0, 0.0)
 	push *= min_separation
 	return Vector3(target.x + push.x, pos.y, target.z + push.y)
+
+
+## Advance speed as a fraction of the speed available in that direction.
+## Advance and retreat are deliberately not the same speed, so each has to be
+## measured against its own maximum - otherwise a full-speed retreat would
+## arrive at the blend space as 3.4/4.6 and play a permanently half-hearted
+## walk_back.
+func _project_advance(advance: float) -> float:
+	var reach: float = forward_speed if advance >= 0.0 else backward_speed
+	return advance / maxf(reach, 0.001)
+
+
+## Writes the locomotion blend point, projected onto the diamond the blend
+## space's triangles actually cover.
+func _set_blend(blend: Vector2) -> void:
+	if _anim_tree == null:
+		return
+
+	# The stick is normalised before it becomes velocity, so a diagonal
+	# arrives here as roughly (0.71, 0.71) - outside the diamond, where the
+	# blend space would clamp it to some nearest edge point of its own
+	# choosing. Scaling by the L1 norm instead lands it at (0.5, 0.5): half
+	# walk, half hop, which is what a diagonal should look like.
+	var span := absf(blend.x) + absf(blend.y)
+	if span > 1.0:
+		blend /= span
+
+	_anim_tree.set(BLEND_POSITION, blend)
