@@ -46,6 +46,7 @@
 [ext_resource type="PackedScene" path="res://scenes/props/rubble.tscn" id="23_rubble"]
 [ext_resource type="PackedScene" path="res://scenes/characters/fighter_player.tscn" id="26_player"]
 [ext_resource type="PackedScene" path="res://scenes/characters/fighter_cpu.tscn" id="27_cpu"]
+[ext_resource type="Script" path="res://scripts/player_movement.gd" id="28_playermove"]
 
 ; Two shared primitives do nearly all the work. Every block below is the same
 ; unit cube or unit cylinder scaled by its node transform, and the stone
@@ -972,13 +973,23 @@ transform = Transform3D(-0.94, 0, 0.342, 0, 1, 0, -0.342, 0, -0.94, -6.5, 0, 24.
 ;  as a blank edge and every bit of head detail is wasted.
 ;
 ;  Both stand at y = 0 on the walking surface, well inside the X = +/-13
-;  ring-out lines. Geometry only - neither has a script, a body or a shape.
+;  ring-out lines.
+;
+;  Ironjaw is geometry only - no script, no body, no shape. Kestrel is the
+;  same scene plus player_movement.gd, set on the instance rather than inside
+;  fighter_player.tscn so the character scene stays the pure art asset its own
+;  header promises and can still be dropped in on either side. The script
+;  carries the 12-degree cheat above with it, so Kestrel holds this pose on
+;  frame one and keeps it all the way around the stage rather than snapping
+;  to exact profile the moment play starts.
 ; -----------------------------------------------------------------------------
 
 [node name="Fighters" type="Node3D" parent="."]
 
-[node name="Kestrel" parent="Fighters" instance=ExtResource("26_player")]
+[node name="Kestrel" parent="Fighters" node_paths=PackedStringArray("opponent") instance=ExtResource("26_player")]
 transform = Transform3D(0.2079, 0, -0.9781, 0, 1, 0, 0.9781, 0, 0.2079, -3.6, 0, 0)
+script = ExtResource("28_playermove")
+opponent = NodePath("../Ironjaw")
 
 [node name="Ironjaw" parent="Fighters" instance=ExtResource("27_cpu")]
 transform = Transform3D(0.2079, 0, 0.9781, 0, 1, 0, -0.9781, 0, 0.2079, 3.6, 0, 0)
